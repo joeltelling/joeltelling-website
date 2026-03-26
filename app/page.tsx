@@ -392,7 +392,7 @@ export default function Home() {
           <p className="font-mono text-xs text-slate-600">
             joeltelling.com{" "}
             <span className="text-slate-700">·</span>{" "}
-            Shoreline, WA{" "}
+            Seattle, WA{" "}
             <span className="text-slate-700">·</span>{" "}
             <span className="text-blue-500/50">✋</span>
           </p>
