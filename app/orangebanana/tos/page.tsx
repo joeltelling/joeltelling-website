@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalPage from "../../../components/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Terms of Service — Orange Banana",
+  title: "Terms of Service - Orange Banana",
   description: "Terms of Service for the Orange Banana iOS game by Joel Telling.",
 };
 
@@ -43,7 +43,7 @@ export default function TermsOfService() {
               </p>
               <p>
                 You may not copy, modify, distribute, sell, or reverse-engineer any part of Orange
-                Banana. All content within the game — including graphics, audio, and game logic —
+                Banana. All content within the game - including graphics, audio, and game logic -
                 remains the intellectual property of Orange Banana&apos;s developers.
               </p>
             </>
@@ -68,7 +68,7 @@ export default function TermsOfService() {
               </ul>
               <p>
                 Both paths give you access to the same content. The in-app purchase is entirely
-                optional — all games can be unlocked through normal gameplay.
+                optional - all games can be unlocked through normal gameplay.
               </p>
             </>
           ),
@@ -80,7 +80,7 @@ export default function TermsOfService() {
             <>
               <p>Orange Banana offers one in-app purchase:</p>
               <div className="my-3 rounded-lg border border-blue-500/20 bg-blue-500/5 px-4 py-3">
-                <span className="font-mono font-semibold text-white">$1.99 — Unlock All Games</span>
+                <span className="font-mono font-semibold text-white">$1.99 - Unlock All Games</span>
                 <p className="mt-1 text-slate-400">
                   A one-time purchase that permanently unlocks every game in Orange Banana. No
                   subscriptions, no recurring charges.
@@ -133,8 +133,8 @@ export default function TermsOfService() {
           content: (
             <p>
               If you have previously purchased &quot;Unlock All Games&quot; and need to restore
-              access — for example, after reinstalling the app or on a new device using the same
-              Apple ID — use the restore purchases option within the app. Restoring is free and will
+              access - for example, after reinstalling the app or on a new device using the same
+              Apple ID - use the restore purchases option within the app. Restoring is free and will
               reinstate your unlocked content.
             </p>
           ),

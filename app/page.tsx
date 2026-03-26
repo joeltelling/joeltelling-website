@@ -112,7 +112,7 @@ const projects: AppProject[] = [
     name: "3D Printing Nerd",
     tagline: "YouTube's home for 3D printing",
     description:
-      "Reviews, tutorials, tips, and honest industry coverage — from desktop printers to industrial additive manufacturing. One of the most trusted 3D printing channels on the internet, with a mission to inform, educate, and advocate.",
+      "Reviews, tutorials, tips, and honest industry coverage - from desktop printers to industrial additive manufacturing. One of the most trusted 3D printing channels on the internet, with a mission to inform, educate, and advocate.",
     category: "YouTube Channel",
     icon: (
       <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-600/25 to-red-500/10">
@@ -134,7 +134,7 @@ const projects: AppProject[] = [
     name: "Orange Banana",
     tagline: "A fast-paced fruit-sorting game",
     description:
-      "Five addictive mini-games that test your speed, memory, and coordination. Sort falling fruit, repeat sequences, fill blenders, and match smoothie orders — all before the clock runs out.",
+      "Five addictive mini-games that test your speed, memory, and coordination. Sort falling fruit, repeat sequences, fill blenders, and match smoothie orders - all before the clock runs out.",
     category: "Game · Family",
     icon: (
       <Image
@@ -338,7 +338,7 @@ export default function Home() {
 
           <p className="max-w-xl text-base leading-relaxed text-slate-400">
             Pacific Northwest native based in Shoreline, WA. Content creator,
-            maker, and YouTube&apos;s most trusted voice in 3D printing —
+            maker, and YouTube&apos;s most trusted voice in 3D printing -
             informing, educating, and advocating for this technology since the
             early days.
           </p>
@@ -355,7 +355,7 @@ export default function Home() {
 
             <div className="space-y-4 text-slate-300 leading-relaxed">
               <p>
-                I&apos;m Joel — husband, father, believer, and lifelong tech nerd with a background in
+                I&apos;m Joel - husband, father, believer, and lifelong tech nerd with a background in
                 software development, mobile devices, and quality assurance. My love for gadgets
                 eventually collided with a brand-new 3D printer, and the{" "}
                 <strong className="text-white">3D Printing Nerd</strong> was born.
@@ -363,11 +363,11 @@ export default function Home() {
               <p>
                 What started as a personal channel to show off cool prints has grown into one of the
                 most trusted online destinations for 3D printer reviews, hands-on tutorials, and
-                honest industry coverage — from desktop hobbyist machines all the way to industrial
+                honest industry coverage - from desktop hobbyist machines all the way to industrial
                 additive manufacturing at events like Formnext.
               </p>
               <p>
-                My mission has always been the same: <em className="text-blue-300">inform, educate, and advocate</em> — especially
+                My mission has always been the same: <em className="text-blue-300">inform, educate, and advocate</em> - especially
                 when it comes to getting this technology into the hands of kids. And yes, I end every
                 video the same way.
               </p>

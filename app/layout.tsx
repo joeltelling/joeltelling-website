@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Joel Telling — The 3D Printing Nerd",
+  title: "Joel Telling - The 3D Printing Nerd",
   description:
-    "Husband, father, and Pacific Northwest content creator. YouTube's 3D Printing Nerd — informing, educating, and advocating for 3D printing technology.",
+    "Husband, father, and Pacific Northwest content creator. YouTube's 3D Printing Nerd - informing, educating, and advocating for 3D printing technology.",
   keywords: ["Joel Telling", "3D Printing Nerd", "3D printing", "YouTube", "content creator"],
   authors: [{ name: "Joel Telling" }],
   openGraph: {
-    title: "Joel Telling — The 3D Printing Nerd",
+    title: "Joel Telling - The 3D Printing Nerd",
     description:
       "YouTube's most trusted voice in 3D printing. Reviews, tips, tricks, and exceptional high fives.",
     url: "https://joeltelling.com",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     creator: "@joeltelling",
-    title: "Joel Telling — The 3D Printing Nerd",
+    title: "Joel Telling - The 3D Printing Nerd",
     description:
       "YouTube's most trusted voice in 3D printing. Reviews, tips, tricks, and exceptional high fives.",
   },

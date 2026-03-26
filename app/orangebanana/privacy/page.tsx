@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import LegalPage from "../../../components/LegalPage";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Orange Banana",
+  title: "Privacy Policy - Orange Banana",
   description: "Privacy Policy for the Orange Banana iOS game by Joel Telling.",
 };
 
@@ -13,7 +13,7 @@ export default function PrivacyPolicy() {
       subtitle="Orange Banana"
       effectiveDate="March 21, 2026"
       lastUpdated="March 21, 2026"
-      intro={`This Privacy Policy describes how Orange Banana ("the Game," "we," "us," or "our") handles information in connection with your use of our iOS mobile game. We are committed to protecting your privacy. We use Google Firebase solely to collect anonymous, non-identifiable gameplay statistics — such as how often games are played. No information that could identify you or any individual is ever collected or stored.`}
+      intro={`This Privacy Policy describes how Orange Banana ("the Game," "we," "us," or "our") handles information in connection with your use of our iOS mobile game. We are committed to protecting your privacy. We use Google Firebase solely to collect anonymous, non-identifiable gameplay statistics - such as how often games are played. No information that could identify you or any individual is ever collected or stored.`}
       sections={[
         {
           number: "01",
@@ -44,7 +44,7 @@ export default function PrivacyPolicy() {
             <>
               <p>
                 When you play Orange Banana, Google Firebase Analytics automatically records anonymous
-                gameplay events — for example, which games are launched and how often. This
+                gameplay events - for example, which games are launched and how often. This
                 information is collected in aggregate and cannot be linked to any individual user.
               </p>
               <p>
