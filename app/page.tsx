@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 
 // ─── Social link data ───────────────────────────────────────────────────────
 
@@ -42,14 +43,6 @@ const TikTokIcon = () => (
 );
 
 const socialLinks: SocialLink[] = [
-  {
-    platform: "YouTube",
-    handle: "@3dprintingnerd",
-    url: "https://youtube.com/@3dprintingnerd",
-    description: "3D printer reviews, tips, tutorials & industry coverage",
-    icon: <YouTubeIcon />,
-    color: "#FF0000",
-  },
   {
     platform: "X / Twitter",
     handle: "@joeltelling",
@@ -107,17 +100,49 @@ interface AppProject {
   tagline: string;
   description: string;
   category: string;
+  icon: ReactNode;
   platforms: { label: string; url: string; available: boolean }[];
   tags: string[];
 }
 
 const projects: AppProject[] = [
   {
+    name: "3D Printing Nerd",
+    tagline: "YouTube's home for 3D printing",
+    description:
+      "Reviews, tutorials, tips, and honest industry coverage — from desktop printers to industrial additive manufacturing. One of the most trusted 3D printing channels on the internet, with a mission to inform, educate, and advocate.",
+    category: "YouTube Channel",
+    icon: (
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-red-500/30 bg-gradient-to-br from-red-600/25 to-red-500/10">
+        <svg viewBox="0 0 24 24" fill="#FF0000" className="w-8 h-8" aria-hidden="true">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+        </svg>
+      </div>
+    ),
+    platforms: [
+      {
+        label: "Watch on YouTube",
+        url: "https://youtube.com/@3dprintingnerd",
+        available: true,
+      },
+    ],
+    tags: ["3D Printing", "Reviews", "Tutorials", "Industry Coverage"],
+  },
+  {
     name: "Orange Banana",
     tagline: "A fast-paced fruit-sorting game",
     description:
       "Five addictive mini-games that test your speed, memory, and coordination. Sort falling fruit, repeat sequences, fill blenders, and match smoothie orders — all before the clock runs out.",
     category: "Game · Family",
+    icon: (
+      <Image
+        src="/orange-banana-icon.jpg"
+        alt="Orange Banana app icon"
+        width={64}
+        height={64}
+        className="rounded-2xl"
+      />
+    ),
     platforms: [
       {
         label: "App Store",
@@ -188,10 +213,7 @@ function ProjectCard({ project }: { project: AppProject }) {
   return (
     <div className="social-card glow-blue rounded-2xl bg-white/[0.03] p-6 backdrop-blur-sm">
       <div className="flex flex-col gap-5 sm:flex-row sm:items-start">
-        {/* Fruit icon placeholder — fun and on-brand */}
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-orange-500/20 bg-gradient-to-br from-orange-500/20 to-yellow-400/10 text-3xl">
-          🍊
-        </div>
+        <div className="shrink-0">{project.icon}</div>
 
         <div className="flex-1 min-w-0">
           <div className="mb-1 flex flex-wrap items-center gap-2">
@@ -224,7 +246,13 @@ function ProjectCard({ project }: { project: AppProject }) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition-all hover:border-blue-500/60 hover:bg-blue-500/20"
                 >
-                  <AppleIcon />
+                  {platform.label.includes("YouTube") ? (
+                    <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+                    </svg>
+                  ) : (
+                    <AppleIcon />
+                  )}
                   {platform.label}
                 </a>
               ) : (
