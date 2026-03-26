@@ -241,7 +241,7 @@ function ProjectCard({ project }: { project: AppProject }) {
             ))}
           </div>
 
-          {/* Platform buttons + legal links */}
+          {/* Platform buttons */}
           <div className="flex flex-wrap gap-3">
             {project.platforms.map((platform) =>
               platform.available ? (
@@ -273,16 +273,22 @@ function ProjectCard({ project }: { project: AppProject }) {
                 </span>
               )
             )}
-            {project.legalLinks?.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-white/20 hover:text-slate-400"
-              >
-                {link.label}
-              </Link>
-            ))}
           </div>
+
+          {/* Legal links */}
+          {project.legalLinks && (
+            <div className="flex flex-wrap gap-3">
+              {project.legalLinks.map((link) => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition-all hover:border-blue-500/60 hover:bg-blue-500/20"
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </div>
     </div>
