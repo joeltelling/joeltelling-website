@@ -277,7 +277,7 @@ function ProjectCard({ project }: { project: AppProject }) {
 
           {/* Legal links */}
           {project.legalLinks && (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 mt-2">
               {project.legalLinks.map((link) => (
                 <Link
                   key={link.href}
