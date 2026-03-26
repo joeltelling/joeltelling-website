@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 // ─── Social link data ───────────────────────────────────────────────────────
 
@@ -103,6 +104,7 @@ interface AppProject {
   icon: ReactNode;
   platforms: { label: string; url: string; available: boolean }[];
   tags: string[];
+  legalLinks?: { label: string; href: string }[];
 }
 
 const projects: AppProject[] = [
@@ -156,6 +158,10 @@ const projects: AppProject[] = [
       },
     ],
     tags: ["iOS", "macOS", "Free", "In-App Purchase"],
+    legalLinks: [
+      { label: "Privacy Policy", href: "/orangebanana/privacy" },
+      { label: "Terms of Service", href: "/orangebanana/tos" },
+    ],
   },
 ];
 
@@ -235,7 +241,7 @@ function ProjectCard({ project }: { project: AppProject }) {
             ))}
           </div>
 
-          {/* Platform buttons */}
+          {/* Platform buttons + legal links */}
           <div className="flex flex-wrap gap-3">
             {project.platforms.map((platform) =>
               platform.available ? (
@@ -267,6 +273,15 @@ function ProjectCard({ project }: { project: AppProject }) {
                 </span>
               )
             )}
+            {project.legalLinks?.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-slate-500 transition-all hover:border-white/20 hover:text-slate-400"
+              >
+                {link.label}
+              </Link>
+            ))}
           </div>
         </div>
       </div>
