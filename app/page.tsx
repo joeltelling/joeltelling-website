@@ -104,6 +104,7 @@ interface AppProject {
   icon: ReactNode;
   platforms: { label: string; url: string; available: boolean }[];
   tags: string[];
+  accent?: "blue" | "orange" | "red";
   legalLinks?: { label: string; href: string }[];
 }
 
@@ -158,10 +159,34 @@ const projects: AppProject[] = [
       },
     ],
     tags: ["iOS", "macOS", "Free", "In-App Purchase"],
+    accent: "orange",
     legalLinks: [
       { label: "Privacy Policy", href: "/orangebanana/privacy" },
       { label: "Terms of Service", href: "/orangebanana/tos" },
     ],
+  },
+  {
+    name: "On The Way",
+    tagline: "Find anything en route.",
+    description:
+      "Search for anything along a route you're already taking - coffee shops, gas stations, restaurants, chargers, and more. Every result shows the exact detour distance, so you can make the call before you commit.",
+    category: "Web App · Travel",
+    icon: (
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-orange-500/30 bg-gradient-to-br from-orange-600/25 to-orange-500/10">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#E8743A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8" aria-hidden="true">
+          <polygon points="3 11 22 2 13 21 11 13 3 11" />
+        </svg>
+      </div>
+    ),
+    platforms: [
+      {
+        label: "Open App",
+        url: "https://ontheway.joeltelling.com",
+        available: true,
+      },
+    ],
+    tags: ["Route Planning", "Travel", "Google Maps", "Free"],
+    accent: "red",
   },
 ];
 
@@ -250,14 +275,26 @@ function ProjectCard({ project }: { project: AppProject }) {
                   href={platform.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition-all hover:border-blue-500/60 hover:bg-blue-500/20"
+                  className={
+                    project.accent === "orange"
+                      ? "inline-flex items-center gap-2 rounded-lg border border-orange-500/30 bg-orange-500/10 px-4 py-2 text-sm font-medium text-orange-300 transition-all hover:border-orange-500/60 hover:bg-orange-500/20"
+                      : project.accent === "red"
+                      ? "inline-flex items-center gap-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition-all hover:border-red-500/60 hover:bg-red-500/20"
+                      : "inline-flex items-center gap-2 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-300 transition-all hover:border-blue-500/60 hover:bg-blue-500/20"
+                  }
                 >
                   {platform.label.includes("YouTube") ? (
                     <svg viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4" aria-hidden="true">
                       <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
                     </svg>
-                  ) : (
+                  ) : platform.label.includes("App Store") ? (
                     <AppleIcon />
+                  ) : (
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4" aria-hidden="true">
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                      <polyline points="15 3 21 3 21 9" />
+                      <line x1="10" y1="14" x2="21" y2="3" />
+                    </svg>
                   )}
                   {platform.label}
                 </a>
