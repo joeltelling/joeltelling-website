@@ -166,6 +166,28 @@ const projects: AppProject[] = [
     ],
   },
   {
+    name: "Rocky Mountain RepRap Festival",
+    tagline: "The official RMRRF event companion.",
+    description:
+      "A mobile-first Progressive Web App built for attendees of the Rocky Mountain RepRap Festival - one of the largest community 3D printing events in the country. Browse vendors by category, navigate the venue with an interactive floor map, and track the full schedule across multiple stages. Works offline and installs as a native app on any device.",
+    category: "Web App · Events",
+    icon: (
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-600/25 to-blue-500/10">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8" aria-hidden="true">
+          <path d="m8 3 4 8 5-5 5 15H2L8 3z" />
+        </svg>
+      </div>
+    ),
+    platforms: [
+      {
+        label: "Open App",
+        url: "https://rmrrf.joeltelling.com",
+        available: true,
+      },
+    ],
+    tags: ["Mobile Web", "PWA", "Event Guide", "Free"],
+  },
+  {
     name: "On The Way",
     tagline: "Find anything en route.",
     description:
