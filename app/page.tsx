@@ -166,6 +166,34 @@ const projects: AppProject[] = [
     ],
   },
   {
+    name: "SOLVD",
+    tagline: "A daily math puzzle. One grid, three difficulties.",
+    description:
+      "Three new arithmetic puzzles every day — Easy, Medium, Hard — generated from the date so every player worldwide solves the same grid. Build a streak, earn the shield by clearing all three in one day, collect badges. No accounts, no ads, no tracking. Everything stays on your device.",
+    category: "Game · Puzzle",
+    icon: (
+      <Image
+        src="/solvd-icon.png"
+        alt="SOLVD app icon"
+        width={64}
+        height={64}
+        className="rounded-2xl"
+      />
+    ),
+    platforms: [
+      {
+        label: "App Store",
+        url: "",
+        available: false,
+      },
+    ],
+    tags: ["iOS", "Free", "No Ads", "No Tracking"],
+    legalLinks: [
+      { label: "Privacy Policy", href: "/solvd/privacy" },
+      { label: "Terms of Service", href: "/solvd/tos" },
+    ],
+  },
+  {
     name: "Rocky Mountain RepRap Festival",
     tagline: "The official RMRRF event companion.",
     description:

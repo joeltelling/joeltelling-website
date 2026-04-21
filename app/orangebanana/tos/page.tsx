@@ -11,6 +11,8 @@ export default function TermsOfService() {
     <LegalPage
       title="Terms of Service"
       subtitle="Orange Banana · iOS App"
+      iconSrc="/orange-banana-icon.jpg"
+      iconAlt="Orange Banana app icon"
       effectiveDate="March 23, 2026"
       lastUpdated="March 23, 2026"
       intro={`These Terms of Service ("Terms") govern your use of Orange Banana ("the Game," "we," "us," or "our"). By downloading or playing Orange Banana, you agree to be bound by these Terms. Please read them carefully before playing.`}

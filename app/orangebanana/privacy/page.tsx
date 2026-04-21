@@ -11,6 +11,8 @@ export default function PrivacyPolicy() {
     <LegalPage
       title="Privacy Policy"
       subtitle="Orange Banana"
+      iconSrc="/orange-banana-icon.jpg"
+      iconAlt="Orange Banana app icon"
       effectiveDate="March 21, 2026"
       lastUpdated="March 21, 2026"
       intro={`This Privacy Policy describes how Orange Banana ("the Game," "we," "us," or "our") handles information in connection with your use of our iOS mobile game. We are committed to protecting your privacy. We use Google Firebase solely to collect anonymous, non-identifiable gameplay statistics - such as how often games are played. No information that could identify you or any individual is ever collected or stored.`}

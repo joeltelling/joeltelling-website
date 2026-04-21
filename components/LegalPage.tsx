@@ -13,6 +13,8 @@ interface LegalPageProps {
   subtitle: string;
   effectiveDate: string;
   lastUpdated: string;
+  iconSrc: string;
+  iconAlt: string;
   intro?: ReactNode;
   sections: Section[];
   footer?: ReactNode;
@@ -23,6 +25,8 @@ export default function LegalPage({
   subtitle,
   effectiveDate,
   lastUpdated,
+  iconSrc,
+  iconAlt,
   intro,
   sections,
   footer,
@@ -59,8 +63,8 @@ export default function LegalPage({
         <header className="mb-12">
           <div className="mb-6 flex items-center gap-4">
             <Image
-              src="/orange-banana-icon.jpg"
-              alt="Orange Banana app icon"
+              src={iconSrc}
+              alt={iconAlt}
               width={56}
               height={56}
               className="rounded-2xl"
