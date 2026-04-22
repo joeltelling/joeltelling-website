@@ -194,6 +194,35 @@ const projects: AppProject[] = [
     ],
   },
   {
+    name: "Ball Speed",
+    tagline: "Measure pitch speed with your phone.",
+    description:
+      "Estimate how fast a pitch travels using just your iPhone — no radar gun needed. Three capture methods (audio impact detection, press-and-hold, or tap-tap), pitcher and field tags, and a persistent offline pitch log. Built for baseball and softball players of any age, from Little League to adult rec.",
+    category: "App · Sports",
+    icon: (
+      <Image
+        src="/ballspeed-icon.png"
+        alt="Ball Speed app icon"
+        width={64}
+        height={64}
+        className="rounded-2xl"
+      />
+    ),
+    platforms: [
+      {
+        label: "App Store",
+        url: "",
+        available: false,
+      },
+    ],
+    tags: ["iOS", "Free", "No Ads", "No Tracking", "Offline"],
+    legalLinks: [
+      { label: "Privacy Policy", href: "/ballspeed/privacy" },
+      { label: "Terms of Service", href: "/ballspeed/tos" },
+      { label: "Support", href: "/ballspeed/support" },
+    ],
+  },
+  {
     name: "Rocky Mountain RepRap Festival",
     tagline: "The official RMRRF event companion.",
     description:
