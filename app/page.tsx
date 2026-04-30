@@ -183,8 +183,8 @@ const projects: AppProject[] = [
     platforms: [
       {
         label: "App Store",
-        url: "",
-        available: false,
+        url: "https://apps.apple.com/us/app/solvd/id6762657288",
+        available: true,
       },
     ],
     tags: ["iOS", "Free", "No Ads", "No Tracking"],
