@@ -211,8 +211,8 @@ const projects: AppProject[] = [
     platforms: [
       {
         label: "App Store",
-        url: "",
-        available: false,
+        url: "https://apps.apple.com/us/app/ball-speed/id6762416582",
+        available: true,
       },
     ],
     tags: ["iOS", "Free", "No Ads", "No Tracking", "Offline"],
@@ -243,6 +243,33 @@ const projects: AppProject[] = [
       },
     ],
     tags: ["Mobile Web", "PWA", "Event Guide", "Free"],
+  },
+  {
+    name: "SpoolSearch",
+    tagline: "Find the right filament, fast.",
+    description:
+      "A community-first filament search engine for the 3D printing world. Search, compare, and shop filament from every major brand and retailer in one place. Filter by material, brand, color, diameter, price, and print temperature to find the right spool for your next print.",
+    category: "Web App · 3D Printing",
+    icon: (
+      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-600/25 to-cyan-500/10">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#22d3ee" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M12 3v3" />
+          <path d="M12 18v3" />
+          <path d="M3 12h3" />
+          <path d="M18 12h3" />
+        </svg>
+      </div>
+    ),
+    platforms: [
+      {
+        label: "Open App",
+        url: "https://spoolsearch.com",
+        available: true,
+      },
+    ],
+    tags: ["Web", "3D Printing", "Filament", "Free"],
   },
   {
     name: "On The Way",
