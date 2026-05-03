@@ -13,64 +13,151 @@ export default function PrivacyPolicy() {
       subtitle="SOLVD · iOS App"
       iconSrc="/solvd-icon.png"
       iconAlt="SOLVD app icon"
-      effectiveDate="April 20, 2026"
-      lastUpdated="April 20, 2026"
-      intro={`This Privacy Policy describes how SOLVD ("the App," "we," "us," or "our") handles information in connection with your use of our iOS daily math puzzle app. Short version: SOLVD collects nothing. Everything you do in the app stays on your device.`}
+      effectiveDate="May 3, 2026"
+      lastUpdated="May 3, 2026"
+      intro={`This Privacy Policy describes how SOLVD ("the App," "we," "us," or "our") handles information in connection with your use of our iOS daily math puzzle app. SOLVD is designed around a strict no-user-content principle: we never store text you type, and other players never see any text you've written.`}
       sections={[
         {
           number: "01",
-          title: "Information We Collect",
+          title: "What We Collect",
           content: (
             <>
               <p>
-                SOLVD does not collect any personal information. We do not collect your name, email
-                address, phone number, location, IP address, device identifiers, or any other data
-                that could be used to identify you.
+                When you first open SOLVD, the app creates a new anonymous account on our servers.
+                This account holds:
               </p>
-              <p>
-                We do not use analytics services, crash reporters, advertising networks, or any other
-                third-party SDK that would transmit data off your device.
-              </p>
+              <ul className="ml-6 list-disc space-y-1">
+                <li>
+                  <strong className="text-white">An anonymous user ID</strong> — a random
+                  identifier (UUID). Not tied to your name, email, phone, Apple ID, or any other
+                  personal info.
+                </li>
+                <li>
+                  <strong className="text-white">An auto-generated handle</strong> — a whimsical
+                  name like "BraveFox42" picked from a fixed wordlist. Visible to other players on
+                  leaderboards. You can re-roll it from a different fixed wordlist; you cannot type
+                  your own.
+                </li>
+                <li>
+                  <strong className="text-white">An auto-generated friend code</strong> — a code
+                  like "BLUE-FOX-42" picked from a fixed wordlist. Only revealed to people you
+                  share it with personally.
+                </li>
+                <li>
+                  <strong className="text-white">Your daily puzzle solves</strong> — date,
+                  difficulty, time taken, mistakes, and hints used. No text, no images.
+                </li>
+                <li>
+                  <strong className="text-white">Aggregate stats derived from solves</strong> —
+                  current streak, best streak, total solves, best time. Calculated locally on your
+                  device and pushed to the server so leaderboards work.
+                </li>
+                <li>
+                  <strong className="text-white">Your friend graph</strong> — the user IDs of
+                  players you have mutually accepted as friends.
+                </li>
+                <li>
+                  <strong className="text-white">Your block list</strong> — the user IDs of players
+                  you have blocked. Used to hide them from your view.
+                </li>
+              </ul>
             </>
           ),
         },
         {
           number: "02",
-          title: "Local Data on Your Device",
+          title: "What We Do Not Collect",
           content: (
             <>
               <p>
-                SOLVD stores your puzzle progress, streak, badges, and settings locally on your
-                device using iOS&apos;s built-in storage. This data never leaves your phone. We do
-                not have access to it.
+                SOLVD intentionally does not collect or transmit any of the following:
               </p>
+              <ul className="ml-6 list-disc space-y-1">
+                <li>Your real name, email, phone number, address, or contacts</li>
+                <li>Your location, IP address (beyond the transient one used to make a request), or device identifiers</li>
+                <li>Any text you type into the app — your local profile name and friend nicknames stay strictly on your device</li>
+                <li>Photos, audio, video, or any media</li>
+                <li>Behavioral or analytics data — there is no analytics SDK, no advertising network, no third-party tracking</li>
+              </ul>
               <p>
-                If you delete the app, this local data is removed by iOS automatically.
+                There is no chat, no comments, no bios, no captions, and no way for one user to send
+                another user any text. Other players see your auto-generated handle and your numeric
+                stats — nothing else.
               </p>
             </>
           ),
         },
         {
           number: "03",
-          title: "Cookies & Tracking Technologies",
+          title: "Local Data on Your Device",
           content: (
-            <p>
-              SOLVD does not use cookies, web beacons, pixel tags, or any other tracking technologies.
-            </p>
+            <>
+              <p>
+                Several pieces of data live only on your device and are never sent to our servers:
+              </p>
+              <ul className="ml-6 list-disc space-y-1">
+                <li>The display name you choose for your own profile</li>
+                <li>Local nicknames you assign to your friends (same posture as your iOS Contacts — your private annotation, never shared)</li>
+                <li>Your detailed solve history (puzzle by puzzle), badges, app settings, and theme preference</li>
+              </ul>
+              <p>
+                If you uninstall the app, this local data is removed by iOS automatically.
+              </p>
+            </>
           ),
         },
         {
           number: "04",
-          title: "Third-Party Services",
+          title: "How We Use the Data",
+          content: (
+            <>
+              <p>The data we collect is used solely to operate the app's features:</p>
+              <ul className="ml-6 list-disc space-y-1">
+                <li><strong className="text-white">Leaderboards</strong> — to rank players by streak or daily best time</li>
+                <li><strong className="text-white">Friend connections</strong> — to let you add friends via friend code and view a friends-only leaderboard</li>
+                <li><strong className="text-white">Block functionality</strong> — to hide players you have blocked, in both directions</li>
+              </ul>
+              <p>
+                We do not use your data for advertising, profiling, marketing, or any purpose
+                outside the app's features. We do not sell or rent data to anyone.
+              </p>
+            </>
+          ),
+        },
+        {
+          number: "05",
+          title: "Service Providers",
           content: (
             <>
               <p>
-                SOLVD does not integrate with any third-party services. There is no advertising
-                network, no analytics provider, no social media SDK, and no cloud backup.
+                We use{" "}
+                <a
+                  href="https://supabase.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
+                  Supabase
+                </a>{" "}
+                as the database and authentication backend that stores the data described in
+                Section 01. Supabase processes this data on our behalf under their{" "}
+                <a
+                  href="https://supabase.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
+                  privacy terms
+                </a>
+                .
               </p>
               <p>
-                Please note that Apple&apos;s App Store and iOS platform may independently collect
-                certain data in accordance with{" "}
+                We do not use any other third-party services. There is no advertising network, no
+                analytics provider, no social media SDK, and no crash reporter.
+              </p>
+              <p>
+                Apple&apos;s App Store and iOS platform may independently collect certain data in
+                accordance with{" "}
                 <a
                   href="https://apple.com/legal/privacy/"
                   target="_blank"
@@ -85,48 +172,73 @@ export default function PrivacyPolicy() {
           ),
         },
         {
-          number: "05",
-          title: "Children's Privacy",
-          content: (
-            <p>
-              SOLVD does not collect any personal information from anyone, including children under
-              the age of 13. Because no data is collected at all, the app is safe for players of any
-              age from a data-collection standpoint.
-            </p>
-          ),
-        },
-        {
           number: "06",
-          title: "Data Security",
-          content: (
-            <p>
-              Because we collect and transmit no data, there is no risk of your personal information
-              being exposed through SOLVD. Local puzzle data on your device is protected by iOS&apos;s
-              standard app sandboxing.
-            </p>
-          ),
-        },
-        {
-          number: "07",
-          title: "Your Rights",
+          title: "Account Deletion",
           content: (
             <>
               <p>
-                Because SOLVD collects no personal data, there is nothing tied to you that we could
-                access, correct, delete, or export on your behalf. Your privacy is fully preserved by
-                design.
+                You can permanently delete your account at any time:{" "}
+                <strong className="text-white">Settings → Delete Account</strong> inside the app.
+                Deletion is immediate and complete — your anonymous user ID, handle, friend code,
+                solve history, stats, friendships, and block list are all permanently removed from
+                our servers.
               </p>
               <p>
-                If you reside in the European Union, California, or another jurisdiction with
-                specific privacy rights (such as GDPR or CCPA), the absence of any data collection
-                means we do not hold personal data subject to those frameworks&apos; individual
-                rights provisions.
+                After deletion, opening the app again creates a fresh anonymous account with no
+                connection to your previous one.
               </p>
             </>
           ),
         },
         {
+          number: "07",
+          title: "Children's Privacy",
+          content: (
+            <p>
+              SOLVD is suitable for players of all ages. The data we collect (anonymous ID, auto-
+              generated handle, gameplay stats) does not include any personally identifying
+              information. We do not knowingly collect personal information from children. If you
+              believe we have inadvertently received personal information from a child under 13,
+              please contact us at the address below and we will delete the associated account.
+            </p>
+          ),
+        },
+        {
           number: "08",
+          title: "Data Security",
+          content: (
+            <p>
+              Data in transit is encrypted via HTTPS. Data at rest in our backend (Supabase) is
+              protected by row-level security policies that limit each account to its own data plus
+              data its friends have voluntarily shared. Local data on your device is protected by
+              iOS&apos;s standard app sandboxing.
+            </p>
+          ),
+        },
+        {
+          number: "09",
+          title: "Your Rights",
+          content: (
+            <>
+              <p>
+                Because the only personal-ish data we hold about you is an opaque user ID and your
+                gameplay records, you can exercise all the standard rights via the in-app delete
+                flow. Specifically:
+              </p>
+              <ul className="ml-6 list-disc space-y-1">
+                <li><strong className="text-white">Access:</strong> All data tied to you is visible inside the app (your handle, friend code, solve history, friends, blocked users)</li>
+                <li><strong className="text-white">Deletion:</strong> Settings → Delete Account removes everything in one action</li>
+                <li><strong className="text-white">Portability:</strong> Your data is gameplay-only and not portable in a meaningful sense, but you can take screenshots of any of it from the in-app screens</li>
+              </ul>
+              <p>
+                If you reside in a jurisdiction with specific data rights (such as GDPR or CCPA) and
+                need anything beyond what the in-app flow provides, contact us at the address below.
+              </p>
+            </>
+          ),
+        },
+        {
+          number: "10",
           title: "Changes to This Policy",
           content: (
             <p>
@@ -138,7 +250,7 @@ export default function PrivacyPolicy() {
           ),
         },
         {
-          number: "09",
+          number: "11",
           title: "Governing Law",
           content: (
             <p>

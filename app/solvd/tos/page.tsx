@@ -13,8 +13,8 @@ export default function TermsOfService() {
       subtitle="SOLVD · iOS App"
       iconSrc="/solvd-icon.png"
       iconAlt="SOLVD app icon"
-      effectiveDate="April 20, 2026"
-      lastUpdated="April 20, 2026"
+      effectiveDate="May 3, 2026"
+      lastUpdated="May 3, 2026"
       intro={`These Terms of Service ("Terms") govern your use of SOLVD ("the App," "we," "us," or "our"). By downloading or playing SOLVD, you agree to be bound by these Terms. Please read them carefully before playing.`}
       sections={[
         {
@@ -63,28 +63,65 @@ export default function TermsOfService() {
           number: "04",
           title: "Acceptable Use",
           content: (
-            <p>
-              You agree to use SOLVD only for lawful, personal entertainment purposes. You must not
-              attempt to exploit, hack, cheat, or otherwise manipulate the app&apos;s puzzle
-              generator, scoring systems, streak mechanics, or badge conditions in unauthorized
-              ways.
-            </p>
+            <>
+              <p>
+                You agree to use SOLVD only for lawful, personal entertainment purposes. You must
+                not attempt to exploit, hack, cheat, or otherwise manipulate the app&apos;s puzzle
+                generator, scoring systems, streak mechanics, badge conditions, or leaderboards in
+                unauthorized ways.
+              </p>
+              <p>
+                You must not attempt to harvest other players&apos; friend codes by automated means,
+                or use the friend system to harass other players. We may suspend or delete accounts
+                found to be abusing these features.
+              </p>
+            </>
           ),
         },
         {
           number: "05",
-          title: "Local Data",
+          title: "Account & Social Features",
           content: (
-            <p>
-              SOLVD stores your puzzle progress, streak, badges, and settings locally on your
-              device. This data is not backed up to any cloud service by us. If you uninstall the
-              app or change devices, your progress will not transfer. We are not responsible for
-              loss of local progress or data.
-            </p>
+            <>
+              <p>
+                When you first open SOLVD, an anonymous account is created on our servers. This
+                account holds your auto-generated handle, friend code, gameplay stats, friend list,
+                and block list. See the{" "}
+                <a
+                  href="/solvd/privacy"
+                  className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                >
+                  Privacy Policy
+                </a>{" "}
+                for the full list of what&apos;s stored.
+              </p>
+              <p>
+                You can delete your account at any time via{" "}
+                <strong className="text-white">Settings → Delete Account</strong> inside the app.
+                Deletion removes all server-side data tied to your account.
+              </p>
+              <p>
+                You can block any other player from your view via the in-app Friends or Decline
+                flows. Blocking is bidirectional for visibility — neither side will see the other on
+                leaderboards.
+              </p>
+            </>
           ),
         },
         {
           number: "06",
+          title: "Local Data",
+          content: (
+            <p>
+              SOLVD stores your detailed puzzle progress, badges, app settings, and theme preference
+              locally on your device. This local data is separate from your server-side account and
+              is not synced. If you uninstall the app, this local data is removed by iOS
+              automatically. We are not responsible for loss of local progress.
+            </p>
+          ),
+        },
+        {
+          number: "07",
           title: "Disclaimer of Warranties",
           content: (
             <p>
@@ -96,7 +133,7 @@ export default function TermsOfService() {
           ),
         },
         {
-          number: "07",
+          number: "08",
           title: "Limitation of Liability",
           content: (
             <p>
@@ -108,7 +145,7 @@ export default function TermsOfService() {
           ),
         },
         {
-          number: "08",
+          number: "09",
           title: "Changes to These Terms",
           content: (
             <p>
@@ -119,7 +156,7 @@ export default function TermsOfService() {
           ),
         },
         {
-          number: "09",
+          number: "10",
           title: "Governing Law",
           content: (
             <p>
