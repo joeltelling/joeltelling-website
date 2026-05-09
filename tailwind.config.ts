@@ -9,25 +9,31 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        navy: {
-          950: "#06090f",
-          900: "#080d17",
-          800: "#0d1829",
-          700: "#112038",
+        bg: {
+          primary: "#0A0F1C",
+          surface: "#141B2D",
+          "surface-alt": "#1C2540",
+          "surface-accent": "#0D1A3A",
         },
-        brand: {
-          blue: "#3b82f6",
-          "blue-light": "#60a5fa",
-          "blue-dim": "#1d4ed8",
-          cyan: "#22d3ee",
+        accent: {
+          blue: "#0062FF",
+          "blue-light": "#3B82F6",
+          amber: "#F59E0B",
+          red: "#EF4444",
+          green: "#22C55E",
+          purple: "#7C3AED",
+          orange: "#EA580C",
+        },
+        border: {
+          subtle: "#1E293B",
         },
       },
       fontFamily: {
+        heading: ["var(--font-heading)", "sans-serif"],
         mono: ["var(--font-mono)", "monospace"],
         sans: ["var(--font-sans)", "system-ui", "sans-serif"],
       },
       animation: {
-        "pulse-slow": "pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "fade-in": "fadeIn 0.6s ease-out forwards",
         "slide-up": "slideUp 0.6s ease-out forwards",
       },
