@@ -417,7 +417,7 @@ export default function Home() {
           As always, high five!
         </p>
         <p className="mt-3 font-mono text-[11px] text-slate-600">
-          Shoreline, WA - 3D Printing Nerd - joeltelling.com
+          Seattle, WA - 3D Printing Nerd - joeltelling.com
         </p>
       </footer>
     </div>
