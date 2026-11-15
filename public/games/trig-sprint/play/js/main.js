@@ -283,24 +283,48 @@
   });
   window.addEventListener('blur', () => { input.jump = false; input.fire = false; input.pointers.clear(); if (G.mode === 'play' && !G.sim.dead && !G.sim.won && !G.demo) pause(true); });
 
+  const jumpHint = $('#jumpHint');
   stage.addEventListener('pointerdown', (e) => {
     if (G.mode !== 'play') return;
-    if (e.target.closest('.round')) return;
+    if (e.target.closest('.round') || e.target.closest('#fireBtn')) return;
     if (e.button === 2) { input.fire = true; return; }
-    input.pointers.add(e.pointerId); input.jump = true; input.pending = true;
+    input.pointers.add(e.pointerId); input.jump = true; input.pending = true; jumpHint.classList.add('down');
     try { stage.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
   });
   const up = (e) => {
     if (e.button === 2) { input.fire = false; return; }
     input.pointers.delete(e.pointerId);
-    if (!input.pointers.size) input.jump = false;
+    if (!input.pointers.size) { input.jump = false; jumpHint.classList.remove('down'); }
   };
   stage.addEventListener('pointerup', up);
   stage.addEventListener('pointercancel', up);
   stage.addEventListener('contextmenu', (e) => e.preventDefault());
-  const fireBtn = $('#fireBtn');
-  fireBtn.addEventListener('pointerdown', (e) => { input.fire = true; e.preventDefault(); });
-  ['pointerup', 'pointercancel', 'pointerleave'].forEach((n) => fireBtn.addEventListener(n, () => { input.fire = false; }));
+  // FIRE zone: the whole right-hand strip. Tracks its own pointers so jump + fire can be held together (multi-touch).
+  const fireBtn = $('#fireBtn'), firePtrs = new Set();
+  const fireSync = () => { input.fire = firePtrs.size > 0; fireBtn.classList.toggle('down', input.fire); };
+  fireBtn.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); firePtrs.add(e.pointerId); fireSync();
+    try { fireBtn.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ }
+  });
+  ['pointerup', 'pointercancel', 'lostpointercapture'].forEach((n) => fireBtn.addEventListener(n, (e) => { firePtrs.delete(e.pointerId); fireSync(); }));
+  window.addEventListener('blur', () => { firePtrs.clear(); fireSync(); jumpHint.classList.remove('down'); });
+  // Letterbox bars (wide phones): taps out there count too. Left of the FIRE boundary = jump, right of it = fire.
+  const outside = new Map();
+  document.addEventListener('pointerdown', (e) => {
+    if (G.mode !== 'play' || e.pointerType === 'mouse' || stage.contains(e.target) || e.target.closest('#rotate')) return;
+    if (!$('#hudbtns').classList.contains('on')) return;
+    const r = stage.getBoundingClientRect();
+    if (e.clientX >= r.left + r.width * 0.64) { outside.set(e.pointerId, 'fire'); firePtrs.add(e.pointerId); fireSync(); }
+    else { outside.set(e.pointerId, 'jump'); input.pointers.add(e.pointerId); input.jump = true; input.pending = true; jumpHint.classList.add('down'); }
+  });
+  const outsideUp = (e) => {
+    const k = outside.get(e.pointerId); if (!k) return;
+    outside.delete(e.pointerId);
+    if (k === 'fire') { firePtrs.delete(e.pointerId); fireSync(); }
+    else { input.pointers.delete(e.pointerId); if (!input.pointers.size) { input.jump = false; jumpHint.classList.remove('down'); } }
+  };
+  document.addEventListener('pointerup', outsideUp);
+  document.addEventListener('pointercancel', outsideUp);
 
   /* ------------------------------ sim stepping ------------------------------ */
   const SFX_MAP = { jump: 'jump', orb: 'orb', pad: 'pad', portal: 'portal', flip: 'flip', shoot: 'shoot', enemyshot: 'enemyshot', hit: 'hit', bulletpop: 'bulletpop', kill: 'kill', coin: 'coin', spawn: 'spawn' };
@@ -375,6 +399,7 @@
         demo: G.demo && !G.demoOnly, noHud: G.demoOnly && G.mode !== 'play', hidePlayer: G.hidePlayer, sampleTrail: G.mode !== 'pause', dtFrame: dt,
         attemptText: G.demoOnly ? '' : 'ATTEMPT ' + G.attempt, bestPct: G.demoOnly ? 0 : best,
         coinsKept: G.L ? save.coins[G.L.id] : null,
+        touchUI: $('#hudbtns').classList.contains('on'),
         hintFire: !G.demoOnly && G.attempt <= 2 && sim.p.x > 12 && sim.p.x < 70 && save.attempts.boot == null,
       });
     } else {

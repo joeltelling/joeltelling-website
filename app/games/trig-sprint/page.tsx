@@ -12,6 +12,7 @@ const GAME_URL = "/games/trig-sprint/play/index.html";
 const controls: [string, string][] = [
   ["Space / Up / W / click / tap", "Jump (hold to keep jumping, fly the ship, zig-zag the wave)"],
   ["X / Shift / F / right-click", "Fire the blaster (the ship fires on its own)"],
+  ["Phone / tablet", "Tap anywhere on the left side to jump. Hold the big FIRE strip on the right to shoot. You can hold both at once."],
   ["Esc / P", "Pause"],
   ["R", "Restart the attempt"],
   ["Z / Backspace", "Place a checkpoint (practice mode)"],
@@ -38,6 +39,12 @@ export default function TrigSprintPage() {
 
       <section className="px-6 py-4 sm:px-8 lg:px-12">
         <div className="mx-auto max-w-5xl">
+          <a
+            href={GAME_URL}
+            className="mb-4 flex items-center justify-center rounded-2xl bg-accent-blue px-6 py-5 text-lg font-bold text-white transition-all hover:brightness-110 sm:hidden"
+          >
+            Play full screen (turn your phone sideways)
+          </a>
           <div className="overflow-hidden rounded-2xl border border-border-subtle bg-black">
             <iframe
               src={GAME_URL}
@@ -49,7 +56,7 @@ export default function TrigSprintPage() {
           </div>
           <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
             <p className="font-mono text-xs text-slate-500">
-              Best with a keyboard. Touch works too.
+              Keyboard or touch. On a phone, use full screen in landscape.
             </p>
             <a
               href={GAME_URL}

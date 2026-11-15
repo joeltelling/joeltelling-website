@@ -588,7 +588,7 @@
       // mode hint on shooting
       if (g.hintFire) {
         ctx.textAlign = 'center'; ctx.font = '700 15px "Segoe UI", system-ui'; ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        ctx.fillText('X / right-click / FIRE button to shoot', W / 2, H - 16);
+        ctx.fillText(g.touchUI ? 'Hold the FIRE side to shoot' : 'X / right-click / FIRE button to shoot', g.touchUI ? W * 0.32 : W / 2, g.touchUI ? 100 : H - 16);
       }
     }
   }

@@ -59,13 +59,28 @@
   .stats span:nth-child(even) { font-weight: 800; text-align: right; }
   .big { font-size: calc(70 * var(--u)); font-weight: 900; }
   .hint { color: var(--dim); font-size: calc(16 * var(--u)); }
-  #hudbtns { position: absolute; right: calc(10 * var(--u)); bottom: calc(10 * var(--u)); display: none; gap: calc(10 * var(--u)); z-index: 3; }
-  #hudbtns.on { display: flex; }
+  /* Touch controls: the right ~36% of the screen is one big FIRE zone, everything else is JUMP. */
+  #hudbtns { position: absolute; inset: 0; display: none; z-index: 3; pointer-events: none; }
+  #hudbtns.on { display: block; }
+  #fireBtn { position: absolute; right: 0; top: 0; bottom: 0; width: 36%; pointer-events: auto; touch-action: none; display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: calc(26 * var(--u)); border-left: calc(3 * var(--u)) dashed rgba(255,79,216,.55);
+    background: linear-gradient(90deg, rgba(255,79,216,0), rgba(255,79,216,.12)); color: #fff; transition: background .06s; }
+  #fireBtn.down { background: linear-gradient(90deg, rgba(255,79,216,.04), rgba(255,79,216,.3)); }
+  #fireBtn b { display: grid; place-items: center; width: calc(150 * var(--u)); height: calc(150 * var(--u)); border-radius: 50%; border: calc(5 * var(--u)) solid #fffb;
+    background: rgba(255,79,216,.4); font: 900 calc(30 * var(--u)) inherit; letter-spacing: calc(3 * var(--u)); text-shadow: 0 0 calc(10 * var(--u)) #000a; }
+  #fireBtn.down b { background: rgba(255,79,216,.8); transform: scale(.94); }
+  #jumpHint { position: absolute; left: 0; top: 0; bottom: 0; width: 64%; pointer-events: none; display: flex; align-items: flex-end; justify-content: center;
+    padding-bottom: calc(26 * var(--u)); font: 900 calc(34 * var(--u)) inherit; letter-spacing: calc(5 * var(--u)); color: rgba(255,255,255,.28);
+    background: linear-gradient(90deg, rgba(55,242,201,.1), rgba(55,242,201,0) 70%); transition: background .06s, color .06s; }
+  #jumpHint.down { color: rgba(255,255,255,.6); background: linear-gradient(90deg, rgba(55,242,201,.24), rgba(55,242,201,0) 80%); }
   .round { width: calc(74 * var(--u)); height: calc(74 * var(--u)); border-radius: 50%; border: calc(3 * var(--u)) solid #fff8; background: rgba(0,0,0,.35);
     color: #fff; font: 800 calc(15 * var(--u)) inherit; display: grid; place-items: center; touch-action: none; }
-  .round.fire { background: rgba(255,79,216,.35); }
-  #pauseBtn { position: absolute; left: calc(10 * var(--u)); bottom: calc(10 * var(--u)); z-index: 3; display: none; }
-  #pauseBtn.on { display: grid; width: calc(46 * var(--u)); height: calc(46 * var(--u)); font-size: calc(18 * var(--u)); }
+  /* pause sits at the top, clear of the thumb zones, so it can't be hit by accident */
+  #pauseBtn { position: absolute; left: calc(196 * var(--u)); top: calc(4 * var(--u)); z-index: 4; display: none; }
+  #pauseBtn.on { display: grid; width: calc(50 * var(--u)); height: calc(50 * var(--u)); font-size: calc(20 * var(--u)); }
+  #rotate { display: none; position: fixed; left: 50%; top: 10px; transform: translateX(-50%); z-index: 50; width: max-content; max-width: 92vw; text-align: center;
+    padding: 10px 16px; border-radius: 12px; background: rgba(255,79,216,.2); border: 2px solid rgba(255,79,216,.7); color: #fff; font: 700 15px/1.3 system-ui, sans-serif; pointer-events: none; }
+  @media (orientation: portrait) and (pointer: coarse) { #rotate { display: block; } }
   #fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 5; }
   #err { position: fixed; left: 0; bottom: 0; right: 0; background: #400; color: #fff; font: 12px monospace; z-index: 99; display: none; white-space: pre-wrap; max-height: 30vh; overflow: auto; }
   #loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(24 * var(--u)); color: var(--dim); }
@@ -152,9 +167,10 @@
   </section>
 
   <div id="pauseBtn" class="round" role="button" aria-label="Pause">II</div>
-  <div id="hudbtns"><div id="fireBtn" class="round fire">FIRE</div></div>
+  <div id="hudbtns"><div id="jumpHint">TAP TO JUMP</div><div id="fireBtn" role="button" aria-label="Fire"><b>FIRE</b></div></div>
   <div id="fade"></div>
 </div>
+<div id="rotate">Rotate your phone sideways for a bigger screen</div>
 <div id="err"></div>
 
 <script>
