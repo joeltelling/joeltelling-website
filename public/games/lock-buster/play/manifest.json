@@ -1,0 +1,14 @@
+{
+  "name": "Lock Buster",
+  "short_name": "Lock Buster",
+  "description": "Crack locks. Steal snacks. Panic gracefully.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#3b1d8f",
+  "theme_color": "#3b1d8f",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

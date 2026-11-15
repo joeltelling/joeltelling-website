@@ -8,6 +8,13 @@ export const metadata: Metadata = {
 
 const games = [
   {
+    slug: "lock-buster",
+    name: "Lock Buster",
+    tagline: "Crack as many combination locks as you can before the clock runs out. Built for touch. Contains jokes.",
+    tags: ["Arcade", "Touch", "Prototype"],
+    accent: "border-accent-blue/30 from-accent-blue/15",
+  },
+  {
     slug: "trig-sprint",
     name: "Trig Sprint",
     tagline: "A rhythm platformer with a live-synthesized soundtrack, five vehicles and a blaster.",
