@@ -12,10 +12,17 @@ const GAME_URL = "/games/lock-buster/play/index.html";
 const howTo: [string, string][] = [
   ["Keypad", "Tap the digits on the sticky note. The code is right there. You just have to be fast."],
   [
+    "Barrel wheels",
+    "Swipe each wheel up or down to the digit on the note. Flick it or nudge it. The lock opens the moment every wheel matches.",
+  ],
+  [
     "Dial",
     "Drag around the dial. Follow the arrows: stop on each number, spinning the right way, then lift your finger to lock it in.",
   ],
-  ["The clock", "Every lock you crack adds time, and faster cracks add more. A wrong code costs you."],
+  [
+    "The clock",
+    "Every lock shows the time it will pay out, and that number drains while you dither. Beat the par time and you gain seconds. Miss it and you bleed them. Par gets tighter as you go.",
+  ],
   ["Streaks", "Crack locks without a single mistake to build your combo multiplier."],
 ];
 

@@ -58,6 +58,7 @@
     hbT: 0,
     overT: 0,
     overShown: false,
+    hist: { dials: 0, last: [] }, // run history handed to core.makeLock
     best: loadBest(),
   };
 
@@ -149,7 +150,7 @@
 
     const hudBottom = $('hud').getBoundingClientRect().bottom;
     L.noteY = hudBottom + 6;
-    L.areaTop = hudBottom + 108;
+    L.areaTop = hudBottom + 120;
     L.areaBottom = H - 14;
     const avail = Math.max(220, L.areaBottom - L.areaTop);
     L.cx = W / 2;
@@ -185,8 +186,26 @@
   }
 
   // ---- Locks -----------------------------------------------------------------
+  // Barrel-lock geometry: a row of vertical digit wheels, 3 digits visible per wheel.
+  function barrelGeom(count) {
+    const bw = Math.min(W - 28, 380);
+    const p = bw * 0.06;
+    const gap = bw * 0.025;
+    const ww = (bw - 2 * p - (count - 1) * gap) / count;
+    const maxH = L.areaBottom - L.areaTop - 2 * p - 6;
+    const cell = Math.max(40, Math.min(ww * 1.25, 110, maxH / 3));
+    const wh = cell * 3;
+    const bh = wh + 2 * p;
+    const bx = L.cx - bw / 2;
+    const by = L.cy - bh / 2;
+    return {
+      bx, by, bw, bh, p, cell,
+      cols: Array.from({ length: count }, (_, i) => ({ x: bx + p + i * (ww + gap), y: by + p, w: ww, h: wh })),
+    };
+  }
+
   function spawnLock() {
-    const spec = core.makeLock(G.rng, G.n);
+    const spec = core.makeLock(G.rng, G.n, G.hist);
     G.n++;
     G.cur = {
       spec,
@@ -208,7 +227,18 @@
       lastDir: null,
       inZone: false,
       stepT: -9,
+      // barrel
+      wheels: spec.type === 'barrel' ? spec.start.map((d) => ({ v: d, vel: 0, drag: null })) : null,
     };
+
+    // Onboarding: never change the rules silently.
+    if (spec.type === 'dial' && spec.dialIndex === 0) {
+      pop('Line the green dot up', L.cx, L.cy - L.dialR * 0.62, { size: 22, color: '#fff', life: 3, vy: -6 });
+      pop('with the red marker!', L.cx, L.cy - L.dialR * 0.62 + 26, { size: 22, color: '#fff', life: 3, vy: -6 });
+    } else if (spec.type === 'dial' && spec.dialIndex === 3) {
+      pop('TRAINING WHEELS OFF!', L.cx, L.cy - L.dialR * 0.62, { size: 30, color: COL.pink, life: 2.4, vy: -6 });
+      pop('(the green dot is gone. good luck)', L.cx, L.cy - L.dialR * 0.62 + 28, { size: 16, color: '#fff', life: 2.4, vy: -6 });
+    }
   }
 
   function inputActive(lk) {
@@ -361,6 +391,79 @@
     if (lk.step >= lk.spec.steps.length) unlock(lk);
   }
 
+  // ---- Barrel input ---------------------------------------------------------------
+  // Each wheel follows a finger 1:1 (two thumbs can work two wheels at once),
+  // then coasts a little and snaps to the nearest digit.
+  const BD = C.BARREL_DIGITS;
+
+  function barrelDown(lk, p, id) {
+    const g = barrelGeom(lk.wheels.length);
+    if (p.y < g.by - 10 || p.y > g.by + g.bh + 10) return;
+    for (let i = 0; i < g.cols.length; i++) {
+      const c = g.cols[i];
+      const slop = g.p * 0.5;
+      if (p.x >= c.x - slop && p.x <= c.x + c.w + slop) {
+        const w = lk.wheels[i];
+        if (w.drag) return;
+        w.drag = { id, lastY: p.y, samples: [{ t: performance.now(), v: w.v }] };
+        w.vel = 0;
+        try { canvas.setPointerCapture(id); } catch (e) {}
+        return;
+      }
+    }
+  }
+
+  function barrelMove(lk, id, p) {
+    const w = lk.wheels.find((w) => w.drag && w.drag.id === id);
+    if (!w) return;
+    const g = barrelGeom(lk.wheels.length);
+    const prev = w.v;
+    w.v += -(p.y - w.drag.lastY) / g.cell; // drag up => higher digits scroll into view
+    w.drag.lastY = p.y;
+    if (Math.floor(prev) !== Math.floor(w.v)) {
+      audio.tick();
+      buzz(5);
+    }
+    const now = performance.now();
+    w.drag.samples.push({ t: now, v: w.v });
+    while (w.drag.samples.length > 2 && now - w.drag.samples[0].t > 100) w.drag.samples.shift();
+  }
+
+  function barrelUp(lk, id) {
+    const w = lk.wheels.find((w) => w.drag && w.drag.id === id);
+    if (!w) return;
+    const s = w.drag.samples;
+    const now = performance.now();
+    const dt = (now - s[0].t) / 1000;
+    w.vel = dt > 0.02 && now - s[s.length - 1].t < 80 ? clamp((w.v - s[0].v) / dt, -30, 30) : 0;
+    w.drag = null;
+  }
+
+  function updateBarrel(lk, dt) {
+    const target = lk.spec.code;
+    lk.wheels.forEach((w) => {
+      if (w.drag) return;
+      const prev = w.v;
+      if (Math.abs(w.vel) > 2.5) {
+        w.v += w.vel * dt; // coast
+        w.vel *= Math.exp(-9 * dt);
+      } else {
+        w.vel = 0;
+        w.v += (Math.round(w.v) - w.v) * Math.min(1, dt * 22); // settle onto a digit
+        if (Math.abs(Math.round(w.v) - w.v) < 0.01) w.v = Math.round(w.v);
+      }
+      if (Math.floor(prev) !== Math.floor(w.v)) {
+        audio.tick();
+        buzz(5);
+      }
+    });
+    // opens as soon as every wheel is settled on its digit
+    const ok = lk.wheels.every(
+      (w, i) => !w.drag && w.vel === 0 && Math.abs(w.v - Math.round(w.v)) < 0.08 && mod(Math.round(w.v), BD) === target[i]
+    );
+    if (ok && inputActive(lk)) unlock(lk);
+  }
+
   // ---- Pointer wiring ------------------------------------------------------------
   const pt = (e) => ({ x: e.clientX, y: e.clientY });
 
@@ -370,19 +473,25 @@
     const lk = G.cur;
     if (!inputActive(lk)) return;
     if (lk.type === 'keypad') keypadDown(lk, pt(e));
+    else if (lk.type === 'barrel') barrelDown(lk, pt(e), e.pointerId);
     else dialDown(lk, pt(e), e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
     e.preventDefault();
     const lk = G.cur;
-    if (lk && lk.type === 'dial' && lk.drag && inputActive(lk)) dialMove(lk, pt(e));
+    if (!lk || !inputActive(lk)) return;
+    if (lk.type === 'dial' && lk.drag) dialMove(lk, pt(e));
+    else if (lk.type === 'barrel') barrelMove(lk, e.pointerId, pt(e));
   });
   const up = (e) => {
     e.preventDefault();
     const lk = G.cur;
-    if (lk && lk.type === 'dial' && lk.drag) {
+    if (!lk) return;
+    if (lk.type === 'dial' && lk.drag) {
       if (inputActive(lk)) dialUp(lk);
       else lk.drag = null;
+    } else if (lk.type === 'barrel') {
+      barrelUp(lk, e.pointerId);
     }
   };
   canvas.addEventListener('pointerup', up);
@@ -463,14 +572,16 @@
     ctx.fillRect(-28, -nh / 2 - 9, 56, 16);
     ctx.restore();
 
-    if (lk.type === 'keypad') {
+    if (lk.type === 'keypad' || lk.type === 'barrel') {
       const len = spec.code.length;
       const spacing = Math.min(50, (nw - 30) / len);
       const fs = Math.min(46, spacing * 0.95);
       for (let i = 0; i < len; i++) {
         const x = (i - (len - 1) / 2) * spacing;
-        const done = i < lk.entered.length;
-        const cursor = i === lk.entered.length && !lk.done;
+        // keypad: dim digits you've already typed. barrel: dim digits whose wheel already matches.
+        const done =
+          lk.type === 'keypad' ? i < lk.entered.length : mod(Math.round(lk.wheels[i].v), BD) === spec.code[i];
+        const cursor = lk.type === 'keypad' && i === lk.entered.length && !lk.done;
         ctx.font = '900 ' + fs + 'px ' + FONT;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -518,6 +629,34 @@
       });
     }
     ctx.restore();
+
+    if (!lk.done) drawBonusMeter(lk, nw, ny + nh);
+  }
+
+  // Live "time you'd earn if you finished right now". It drains while you dither,
+  // so every single lock has its own little deadline.
+  function drawBonusMeter(lk, nw, noteBottom) {
+    const elapsed = Math.max(0, G.t - lk.startT);
+    const b = core.timeBonus(lk.spec.par, elapsed, lk.spec.n);
+    const frac = clamp((b.total - C.minBonus) / Math.max(0.01, b.max - C.minBonus), 0, 1);
+    const empty = frac <= 0.001;
+    const col = frac > 0.5 ? COL.teal : frac > 0.2 ? COL.yellow : COL.red;
+    const bw = Math.min(nw * 0.62, 220), bh = 9;
+    const y = noteBottom + 15;
+    const x = L.cx - (bw + 62) / 2;
+    ctx.fillStyle = 'rgba(0,0,0,.4)';
+    rr(x, y - bh / 2, bw, bh, 5);
+    ctx.fill();
+    ctx.lineWidth = 2.5;
+    ctx.strokeStyle = COL.ink;
+    ctx.stroke();
+    if (!empty) {
+      ctx.fillStyle = col;
+      rr(x + 1, y - bh / 2 + 1, Math.max(6, (bw - 2) * frac), bh - 2, 4);
+      ctx.fill();
+    }
+    const pulse = empty ? 1 + Math.sin(G.t * 16) * 0.06 : 1;
+    text('+' + b.total.toFixed(1) + 's', x + bw + 8, y + 1, 15 * pulse, empty ? COL.red : '#fff', { align: 'left', lw: 4 });
   }
 
   // ---- Drawing: keypad --------------------------------------------------------------
@@ -621,6 +760,90 @@
     if (lk.done) {
       ctx.fillStyle = 'rgba(61,220,132,.38)';
       rr(bx, by, bw, bh, 28);
+      ctx.fill();
+    }
+  }
+
+  // ---- Drawing: barrel wheels ---------------------------------------------------------
+  function drawBarrel(lk) {
+    const g = barrelGeom(lk.wheels.length);
+    const { bx, by, bw, bh, cell } = g;
+
+    ctx.fillStyle = 'rgba(15,0,50,.4)';
+    rr(bx, by + 10, bw, bh, 26);
+    ctx.fill();
+    const bg = ctx.createLinearGradient(0, by, 0, by + bh);
+    bg.addColorStop(0, '#ff8a5b');
+    bg.addColorStop(1, '#e0482b');
+    ctx.fillStyle = bg;
+    rr(bx, by, bw, bh, 26);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = COL.ink;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.2)';
+    rr(bx + 8, by + 6, bw - 16, g.p * 0.5, 8);
+    ctx.fill();
+
+    g.cols.forEach((c, i) => {
+      const w = lk.wheels[i];
+      const code = lk.spec.code[i];
+      const match = mod(Math.round(w.v), BD) === code;
+      const midY = c.y + c.h / 2;
+
+      ctx.save();
+      rr(c.x, c.y, c.w, c.h, 14);
+      ctx.clip();
+      // cylinder shading: bright in the middle, dark toward the top/bottom edges
+      const cg = ctx.createLinearGradient(0, c.y, 0, c.y + c.h);
+      cg.addColorStop(0, '#b9a98a');
+      cg.addColorStop(0.28, COL.cream);
+      cg.addColorStop(0.5, match ? '#d4ffe4' : '#ffffff');
+      cg.addColorStop(0.72, COL.cream);
+      cg.addColorStop(1, '#b9a98a');
+      ctx.fillStyle = cg;
+      ctx.fillRect(c.x, c.y, c.w, c.h);
+
+      const base = Math.floor(w.v);
+      const fs = Math.min(cell * 0.72, c.w * 0.85);
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      for (let k = base - 2; k <= base + 3; k++) {
+        const off = k - w.v; // in cells, 0 = centered
+        const y = midY + off * cell;
+        const near = Math.abs(off);
+        if (near > 1.8) continue;
+        const sc = 1 - Math.min(0.35, near * 0.22);
+        ctx.save();
+        ctx.translate(c.x + c.w / 2, y);
+        ctx.scale(1, sc); // squash toward the edges like a rolling drum
+        ctx.font = '900 ' + fs + 'px ' + FONT;
+        const centered = near < 0.5;
+        ctx.fillStyle = centered && match ? '#1f9d55' : COL.ink;
+        ctx.globalAlpha = Math.max(0.25, 1 - near * 0.55);
+        ctx.fillText(String(mod(k, BD)), 0, 2);
+        ctx.restore();
+      }
+      ctx.restore();
+
+      // window frame + center band
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = COL.ink;
+      rr(c.x, c.y, c.w, c.h, 14);
+      ctx.stroke();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = match ? COL.green : COL.pink;
+      ctx.beginPath();
+      ctx.moveTo(c.x + 4, midY - cell / 2);
+      ctx.lineTo(c.x + c.w - 4, midY - cell / 2);
+      ctx.moveTo(c.x + 4, midY + cell / 2);
+      ctx.lineTo(c.x + c.w - 4, midY + cell / 2);
+      ctx.stroke();
+    });
+
+    if (lk.done) {
+      ctx.fillStyle = 'rgba(61,220,132,.38)';
+      rr(bx, by, bw, bh, 26);
       ctx.fill();
     }
   }
@@ -777,6 +1000,7 @@
     ctx.translate(-L.cx, -L.cy);
     drawNote(lk);
     if (lk.type === 'keypad') drawKeypad(lk);
+    else if (lk.type === 'barrel') drawBarrel(lk);
     else drawDial(lk);
     ctx.restore();
   }
@@ -849,6 +1073,7 @@
         lk.entered = [];
         lk.wrongT = 0;
       }
+      if (lk && lk.type === 'barrel' && !lk.done) updateBarrel(lk, dt);
       // heartbeat gets faster as the clock runs down
       if (G.timeLeft < 10 && G.timeLeft > 0) {
         G.hbT -= dt;
@@ -887,8 +1112,14 @@
   function frame(ts) {
     const dt = Math.min(0.05, (ts - last) / 1000 || 0);
     last = ts;
-    update(dt);
-    render();
+    try {
+      update(dt);
+      render();
+    } catch (e) {
+      // one bad frame must never freeze a whole run
+      LB.lastError = e;
+      if (window.console) console.error(e);
+    }
     requestAnimationFrame(frame);
   }
 
@@ -902,6 +1133,7 @@
     G.mode = 'playing';
     G.rng = core.makeRng(newSeed());
     G.n = 0;
+    G.hist = { dials: 0, last: [] };
     G.timeLeft = C.startTime;
     G.score = 0;
     G.dispScore = 0;
@@ -1021,5 +1253,5 @@
   requestAnimationFrame(frame);
 
   // exposed for the dev self-test (index.html?selftest)
-  LB.game = { G, L, startGame, STEP };
+  LB.game = { G, L, startGame, STEP, barrelGeom };
 })();
