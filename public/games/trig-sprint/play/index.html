@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#000000">
 <title>Trig Sprint</title>
 <link rel="icon" href="assets/icon.svg">
 <style>
@@ -65,6 +69,9 @@
   #fireBtn { position: absolute; right: 0; top: 0; bottom: 0; width: 36%; pointer-events: auto; touch-action: none; display: flex; align-items: flex-end; justify-content: center;
     padding-bottom: calc(26 * var(--u)); border-left: calc(3 * var(--u)) dashed rgba(255,79,216,.55);
     background: linear-gradient(90deg, rgba(255,79,216,0), rgba(255,79,216,.12)); color: #fff; transition: background .06s; }
+  /* the dashed divider only shows for the first few seconds, then fades out */
+  #hudbtns.on #fireBtn { animation: dividerFade 1s ease 3.5s forwards; }
+  @keyframes dividerFade { to { border-left-color: rgba(255,79,216,0); } }
   #fireBtn.down { background: linear-gradient(90deg, rgba(255,79,216,.04), rgba(255,79,216,.3)); }
   #fireBtn b { display: grid; place-items: center; width: calc(150 * var(--u)); height: calc(150 * var(--u)); border-radius: 50%; border: calc(5 * var(--u)) solid #fffb;
     background: rgba(255,79,216,.4); font: 900 calc(30 * var(--u)) inherit; letter-spacing: calc(3 * var(--u)); text-shadow: 0 0 calc(10 * var(--u)) #000a; }
@@ -104,6 +111,7 @@
         <button class="btn alt small" data-go="icon">Icon</button>
         <button class="btn ghost small" data-go="settings">Settings</button>
         <button class="btn ghost small" data-go="help">How to play</button>
+        <button class="btn ghost small" id="btnFS">Fullscreen</button>
       </div>
     </div>
     <div class="hint">Space / click / tap to jump &nbsp;·&nbsp; X / right-click to shoot</div>

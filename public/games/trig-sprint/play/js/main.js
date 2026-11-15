@@ -129,6 +129,36 @@
   }
   ['pointerdown', 'keydown'].forEach((ev) => window.addEventListener(ev, ensureAudio, { passive: true }));
 
+  /* ------------------------------ fullscreen ------------------------------ */
+  // Touch devices go fullscreen (and landscape, where the browser allows it) on the first tap, which hides the browser bars.
+  // iPhone Safari has no Fullscreen API for pages, so there it only works when the page is added to the Home Screen.
+  const fsRoot = document.documentElement;
+  const fsReq = fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen;
+  const fsExit = document.exitFullscreen || document.webkitExitFullscreen;
+  const canFS = !!fsReq;
+  const inFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  let fsWas = false, fsLeft = false;
+  function enterFS() {
+    if (!canFS || inFS()) return;
+    const lock = () => { try { const o = screen.orientation; if (o && o.lock) o.lock('landscape').catch(() => {}); } catch (err) { /* ignore */ } };
+    try {
+      const p = fsReq.call(fsRoot, { navigationUI: 'hide' });
+      if (p && p.then) p.then(lock, () => {}); else lock();
+    } catch (err) { /* ignore */ }
+  }
+  function toggleFS() { if (inFS()) { fsLeft = true; try { fsExit.call(document); } catch (err) { /* ignore */ } } else { fsLeft = false; enterFS(); } }
+  ['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => {
+    if (inFS()) fsWas = true;
+    else if (fsWas) { fsLeft = true; try { screen.orientation && screen.orientation.unlock && screen.orientation.unlock(); } catch (err) { /* ignore */ } }
+  }));
+  // pointerup/click carry the user activation a fullscreen request needs on touch screens
+  ['pointerup', 'click'].forEach((ev) => window.addEventListener(ev, (e) => {
+    if (!canFS || fsLeft || inFS() || e.pointerType === 'mouse') return;
+    if (isTouch && save.touch !== false) enterFS();
+  }, { passive: true }));
+  const btnFS = $('#btnFS');
+  if (btnFS) { if (!canFS) btnFS.style.display = 'none'; else btnFS.addEventListener('click', () => { ensureAudio(); toggleFS(); }); }
+
   /* ------------------------------ level flow ------------------------------ */
   function newSim() { return new TS.Sim(G.L); }
 
