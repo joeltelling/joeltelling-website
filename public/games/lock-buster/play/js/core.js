@@ -61,7 +61,7 @@
   }
 
   // ---- Lock generation -----------------------------------------------------
-  const LOCK_TYPES = ['keypad', 'barrel', 'dial'];
+  const LOCK_TYPES = ['keypad', 'barrel', 'dial', 'slider'];
 
   function makeCode(rng, len) {
     let code;
@@ -81,6 +81,7 @@
     if (n < 2) type = 'keypad';
     else if (n === 2) type = 'barrel';
     else if (n === 3) type = 'dial';
+    else if (n === 4) type = 'slider';
     else {
       // random, but never the same type three times running
       const l = hist.last;
@@ -114,6 +115,20 @@
       });
       spec.par = 1.2 + 0.9 * len;
       spec.base = 120 * len;
+    } else if (type === 'slider') {
+      // Sliders are matched by sight: drag each handle onto its notch (0 = bottom, 1 = top).
+      const len = n < 12 ? 3 : n < 24 ? 4 : 5;
+      spec.targets = Array.from({ length: len }, () => int(rng, 2, 18) / 20);
+      spec.start = spec.targets.map((t) => {
+        let s;
+        do {
+          s = int(rng, 0, 20) / 20;
+        } while (Math.abs(s - t) < 0.3);
+        return s;
+      });
+      spec.tol = n < 12 ? 0.05 : n < 24 ? 0.035 : 0.025; // half-width of the sweet spot, as a fraction of the track
+      spec.par = 1.2 + 0.8 * len;
+      spec.base = 110 * len;
     } else {
       const d = hist.dials; // difficulty follows how many dials you've seen, not lock number
       const count = d < 10 ? 3 : 4;
@@ -134,6 +149,22 @@
       spec.base = 150 * count;
       hist.dials++;
     }
+    // Modifiers ("make it worse"): start at lock 9 and get more common, up to ~45%.
+    spec.mod = null;
+    if (n >= 8 && rng() < Math.min(0.45, 0.06 * (n - 7))) {
+      const pool = type === 'keypad' ? ['peek', 'shuffle'] : ['peek'];
+      spec.mod = pick(rng, pool);
+      if (spec.mod === 'peek') {
+        // the code disappears after a few seconds; tap the note to peek again (costs time)
+        const size = spec.code ? spec.code.length : spec.targets ? spec.targets.length : spec.steps.length;
+        spec.peek = type === 'dial' ? 3.5 + 0.9 * size : 1.5 + 0.4 * size;
+        spec.par *= 1.2;
+      } else {
+        spec.shuffleSeed = int(rng, 1, 1000000000); // keys rearrange after every tap (deterministic per lock)
+        spec.par *= 1.5;
+      }
+    }
+
     hist.last.push(type);
     if (hist.last.length > 4) hist.last.shift();
     return spec;

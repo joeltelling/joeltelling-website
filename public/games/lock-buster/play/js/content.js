@@ -100,6 +100,13 @@
       'Dials have two directions. Pick right.',
     ],
 
+    // first time a modifier shows up in a run, explain it (with attitude)
+    MOD_INTRO: {
+      peek: ['PEEK!', 'The code vanishes soon. Tap the note to look again (-1.5s)'],
+      shuffle: ['SHUFFLE!', 'The keys move after every tap. Good luck, have fun'],
+    },
+    PEEK_AGAIN: ['Cheater!', 'Memory: not great.', 'Okay, one more look.', 'Peeking costs. Nothing is free.'],
+
     BUSTED_TITLES: ['BUSTED!', "TIME'S UP!", 'CAUGHT!', 'OH NO!'],
     BUSTED_QUIPS: [
       'The owner came home with snacks.',

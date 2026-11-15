@@ -59,6 +59,7 @@
     overT: 0,
     overShown: false,
     hist: { dials: 0, last: [] }, // run history handed to core.makeLock
+    seenMods: {}, // modifiers/lock types already explained this run
     best: loadBest(),
   };
 
@@ -229,7 +230,28 @@
       stepT: -9,
       // barrel
       wheels: spec.type === 'barrel' ? spec.start.map((d) => ({ v: d, vel: 0, drag: null })) : null,
+      // slider bank
+      sliders: spec.type === 'slider' ? spec.start.map((v) => ({ v, locked: false, drag: null, inZone: false })) : null,
+      // keypad layout: order[i] = label shown at grid position i (shuffle modifier rearranges it)
+      order: KEY_LABELS.slice(),
+      shuffleRng: spec.mod === 'shuffle' ? core.makeRng(spec.shuffleSeed) : null,
+      prevIdx: null,
+      shufT: -9,
+      // peek modifier: the note stays readable until max(startT + peek, peekUntil)
+      peekUntil: 0,
     };
+
+    // Modifiers: explain each one the first time it shows up in a run.
+    if (spec.mod && !G.seenMods[spec.mod]) {
+      G.seenMods[spec.mod] = true;
+      const [title, sub] = content.MOD_INTRO[spec.mod];
+      pop(title, L.cx, L.cy - 40, { size: 40, color: COL.pink, life: 2.6, vy: -6 });
+      pop(sub, L.cx, L.cy + 2, { size: 16, color: '#fff', life: 2.6, vy: -6 });
+    }
+    if (spec.type === 'slider' && !G.seenMods.slider) {
+      G.seenMods.slider = true;
+      pop('Drag each slider onto its notch!', L.cx, sliderGeom(spec.targets.length).by + 22, { size: 20, color: '#fff', life: 2.6, vy: -6 });
+    }
 
     // Onboarding: never change the rules silently.
     if (spec.type === 'dial' && spec.dialIndex === 0) {
@@ -294,26 +316,49 @@
   }
 
   // ---- Keypad input ------------------------------------------------------------
+  const KEY_LABELS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'DEL', '0', ''];
+
+  // grid rect of the key currently showing `label` on this lock
+  function keyRect(lk, label) {
+    return L.kp.keys[lk.order.indexOf(String(label))];
+  }
+
+  // Shuffle modifier: rearrange the digit keys (DEL and the empty slot stay put).
+  function shuffleKeys(lk) {
+    const idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 10];
+    const labels = idx.map((i) => lk.order[i]);
+    for (let i = labels.length - 1; i > 0; i--) {
+      const j = Math.floor(lk.shuffleRng() * (i + 1));
+      [labels[i], labels[j]] = [labels[j], labels[i]];
+    }
+    lk.prevIdx = {};
+    lk.order.forEach((l, i) => (lk.prevIdx[l] = i));
+    idx.forEach((gridPos, n) => (lk.order[gridPos] = labels[n]));
+    lk.shufT = G.t;
+  }
+
   function keypadDown(lk, p) {
     const kp = L.kp;
     const slop = kp.gap / 2;
     for (let i = 0; i < kp.keys.length; i++) {
       const k = kp.keys[i];
-      if (!k.label) continue;
+      const label = lk.order[i];
+      if (!label) continue;
       if (p.x >= k.x - slop && p.x <= k.x + k.w + slop && p.y >= k.y - slop && p.y <= k.y + k.h + slop) {
-        lk.pressed = { i, t: G.t };
-        if (k.label === 'DEL') {
+        lk.pressed = { label, t: G.t };
+        if (label === 'DEL') {
           if (lk.entered.length) {
             lk.entered.pop();
             audio.key(2);
             buzz(8);
           }
         } else {
-          const d = +k.label;
+          const d = +label;
           lk.entered.push(d);
           audio.key(d);
           buzz(10);
           if (lk.entered.length === lk.spec.code.length) submitKeypad(lk);
+          else if (lk.shuffleRng) shuffleKeys(lk);
         }
         return;
       }
@@ -464,6 +509,93 @@
     if (ok && inputActive(lk)) unlock(lk);
   }
 
+  // ---- Slider-bank input ------------------------------------------------------------
+  // Drag each handle onto its notch and let go. Releasing inside the sweet spot locks it in.
+  function sliderGeom(count) {
+    const bw = Math.min(W - 28, 380);
+    const p = bw * 0.06;
+    const gap = bw * 0.03;
+    const ww = (bw - 2 * p - (count - 1) * gap) / count;
+    const hh = 48; // handle height
+    const trackH = Math.max(120, Math.min(300, L.areaBottom - L.areaTop - 2 * p - hh - 6));
+    const bh = trackH + hh + 2 * p;
+    const bx = L.cx - bw / 2;
+    const by = L.cy - bh / 2;
+    const top = by + p + hh / 2;
+    const bottom = by + bh - p - hh / 2;
+    return {
+      bx, by, bw, bh, p, hh, top, bottom, len: bottom - top,
+      cols: Array.from({ length: count }, (_, i) => ({ x: bx + p + i * (ww + gap), w: ww })),
+    };
+  }
+  const sliderY = (g, v) => g.bottom - v * g.len;
+
+  function sliderDown(lk, p, id) {
+    const g = sliderGeom(lk.sliders.length);
+    if (p.y < g.by - 10 || p.y > g.by + g.bh + 10) return;
+    for (let i = 0; i < g.cols.length; i++) {
+      const c = g.cols[i];
+      const slop = g.p * 0.4;
+      if (p.x >= c.x - slop && p.x <= c.x + c.w + slop) {
+        const s = lk.sliders[i];
+        if (s.locked || s.drag) return;
+        s.drag = { id, y0: p.y, v0: s.v }; // anchored: the handle keeps its offset from your finger
+        try { canvas.setPointerCapture(id); } catch (e) {}
+        return;
+      }
+    }
+  }
+
+  function sliderMove(lk, id, p) {
+    const i = lk.sliders.findIndex((s) => s.drag && s.drag.id === id);
+    if (i < 0) return;
+    const s = lk.sliders[i];
+    const g = sliderGeom(lk.sliders.length);
+    const prev = s.v;
+    s.v = clamp(s.drag.v0 - (p.y - s.drag.y0) / g.len, 0, 1);
+    if (Math.floor(prev * 20) !== Math.floor(s.v * 20)) {
+      audio.tick();
+      buzz(4);
+    }
+    const inZone = Math.abs(s.v - lk.spec.targets[i]) <= lk.spec.tol;
+    if (inZone && !s.inZone) {
+      audio.zone();
+      buzz([10, 15, 10]);
+    }
+    s.inZone = inZone;
+  }
+
+  function sliderUp(lk, id) {
+    const i = lk.sliders.findIndex((s) => s.drag && s.drag.id === id);
+    if (i < 0) return;
+    const s = lk.sliders[i];
+    s.drag = null;
+    if (Math.abs(s.v - lk.spec.targets[i]) <= lk.spec.tol) {
+      s.v = lk.spec.targets[i];
+      s.locked = true;
+      s.inZone = false;
+      s.lockT = G.t;
+      audio.step();
+      buzz(25);
+      if (lk.sliders.every((x) => x.locked)) unlock(lk);
+    }
+  }
+
+  // ---- Peek modifier: tap the hidden note to look again, at a price ------------------------
+  function inNote(p) {
+    const nw = Math.min(W - 28, 360);
+    return p.y >= L.noteY + 14 && p.y <= L.noteY + 100 && Math.abs(p.x - W / 2) <= nw / 2 + 8;
+  }
+
+  function peekAgain(lk) {
+    lk.peekUntil = G.t + 1.4;
+    G.timeLeft = Math.max(0, G.timeLeft - 1.5);
+    buzz(15);
+    audio.key(1);
+    pop(rand(content.PEEK_AGAIN), L.cx, L.noteY + 120, { size: 22, color: COL.pink, life: 1.0 });
+    pop('-1.5s', L.cx, L.noteY + 148, { size: 22, color: COL.red, life: 1.0 });
+  }
+
   // ---- Pointer wiring ------------------------------------------------------------
   const pt = (e) => ({ x: e.clientX, y: e.clientY });
 
@@ -472,9 +604,15 @@
     audio.resume();
     const lk = G.cur;
     if (!inputActive(lk)) return;
-    if (lk.type === 'keypad') keypadDown(lk, pt(e));
-    else if (lk.type === 'barrel') barrelDown(lk, pt(e), e.pointerId);
-    else dialDown(lk, pt(e), e.pointerId);
+    const p = pt(e);
+    if (lk.spec.peek && noteVis(lk) <= 0 && inNote(p)) {
+      peekAgain(lk);
+      return;
+    }
+    if (lk.type === 'keypad') keypadDown(lk, p);
+    else if (lk.type === 'barrel') barrelDown(lk, p, e.pointerId);
+    else if (lk.type === 'slider') sliderDown(lk, p, e.pointerId);
+    else dialDown(lk, p, e.pointerId);
   });
   canvas.addEventListener('pointermove', (e) => {
     e.preventDefault();
@@ -482,6 +620,7 @@
     if (!lk || !inputActive(lk)) return;
     if (lk.type === 'dial' && lk.drag) dialMove(lk, pt(e));
     else if (lk.type === 'barrel') barrelMove(lk, e.pointerId, pt(e));
+    else if (lk.type === 'slider') sliderMove(lk, e.pointerId, pt(e));
   });
   const up = (e) => {
     e.preventDefault();
@@ -492,6 +631,8 @@
       else lk.drag = null;
     } else if (lk.type === 'barrel') {
       barrelUp(lk, e.pointerId);
+    } else if (lk.type === 'slider' && inputActive(lk)) {
+      sliderUp(lk, e.pointerId);
     }
   };
   canvas.addEventListener('pointerup', up);
@@ -521,6 +662,17 @@
 
   function pop(str, x, y, o) {
     o = o || {};
+    // wrap long lines onto two rows at the space nearest the middle
+    const size = o.size || 26;
+    if (str.length * size * 0.56 > W - 24 && str.indexOf(' ') > 0) {
+      let best = -1;
+      for (let i = 0; i < str.length; i++) {
+        if (str[i] === ' ' && (best < 0 || Math.abs(i - str.length / 2) < Math.abs(best - str.length / 2))) best = i;
+      }
+      pop(str.slice(0, best), x, y, o);
+      pop(str.slice(best + 1), x, y + size * 1.15, o);
+      return;
+    }
     G.pops.push({
       text: str, x, y,
       size: o.size || 26,
@@ -538,6 +690,14 @@
   }
 
   // ---- Drawing: note + owner ------------------------------------------------------
+  // Peek modifier: 1 = fully readable, fades to 0 over the last half second, then hidden.
+  function noteVis(lk) {
+    const sp = lk.spec;
+    if (!sp.peek) return 1;
+    const left = Math.max(lk.startT + sp.peek, lk.peekUntil) - G.t;
+    return left > 0 ? clamp(left / 0.5, 0, 1) : 0;
+  }
+
   function drawNote(lk) {
     const spec = lk.spec;
     const nw = Math.min(W - 28, 360);
@@ -572,6 +732,10 @@
     ctx.fillRect(-28, -nh / 2 - 9, 56, 16);
     ctx.restore();
 
+    const vis = noteVis(lk);
+    const hid = vis <= 0;
+    const ghost = 0.5 + Math.sin(G.t * 7) * 0.12; // pulsing '?' while the code is hidden
+
     if (lk.type === 'keypad' || lk.type === 'barrel') {
       const len = spec.code.length;
       const spacing = Math.min(50, (nw - 30) / len);
@@ -585,12 +749,40 @@
         ctx.font = '900 ' + fs + 'px ' + FONT;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = done ? 'rgba(26,11,61,.28)' : COL.ink;
-        ctx.fillText(String(spec.code[i]), x, 2);
+        ctx.save();
+        ctx.globalAlpha = hid ? ghost : vis;
+        ctx.fillStyle = done && !hid ? 'rgba(26,11,61,.28)' : hid ? COL.pink : COL.ink;
+        ctx.fillText(hid ? '?' : String(spec.code[i]), x, 2);
+        ctx.restore();
         if (cursor) {
           ctx.fillStyle = COL.pink;
           ctx.fillRect(x - fs * 0.3, nh / 2 - 12, fs * 0.6, 5);
         }
+      }
+    } else if (lk.type === 'slider') {
+      // a little diagram of the target heights: one mini track per slider, a notch on each
+      const len = spec.targets.length;
+      const spacing = Math.min(58, (nw - 30) / len);
+      for (let i = 0; i < len; i++) {
+        const x = (i - (len - 1) / 2) * spacing;
+        const locked = lk.sliders[i].locked;
+        ctx.fillStyle = 'rgba(26,11,61,.25)';
+        rr(x - 5, -22, 10, 44, 5);
+        ctx.fill();
+        ctx.save();
+        ctx.globalAlpha = hid ? ghost : vis;
+        if (hid) {
+          text('?', x, 0, 26, COL.pink, { stroke: false });
+        } else {
+          const y = 22 - spec.targets[i] * 44;
+          ctx.fillStyle = locked ? '#1f9d55' : COL.pink;
+          ctx.strokeStyle = COL.ink;
+          ctx.lineWidth = 2.5;
+          rr(x - 12, y - 4, 24, 8, 4);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
       }
     } else {
       const steps = spec.steps;
@@ -602,17 +794,18 @@
         const fs = isCur ? 34 : 28;
         const col = isDone ? '#1f9d55' : COL.ink;
         ctx.save();
-        ctx.globalAlpha = isDone ? 0.55 : isCur ? 1 : 0.7;
+        ctx.globalAlpha = (isDone ? 0.55 : isCur ? 1 : 0.7) * (hid ? ghost + 0.3 : vis);
         ctx.font = '900 ' + fs + 'px ' + FONT;
-        const tw = ctx.measureText(String(st.n)).width;
-        const arrowW = 24;
-        const total = tw + 6 + arrowW;
+        const lbl = hid ? '??' : String(st.n);
+        const tw = ctx.measureText(lbl).width;
+        const arrowW = hid ? 0 : 24;
+        const total = tw + (hid ? 0 : 6) + arrowW;
         const x0 = cx - total / 2;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillStyle = col;
-        ctx.fillText(String(st.n), x0, 2);
-        circArrow(x0 + tw + 6 + arrowW / 2, 2, 8, st.dir, isCur ? COL.pink : col, 3.2);
+        ctx.fillStyle = hid ? COL.pink : col;
+        ctx.fillText(lbl, x0, 2);
+        if (!hid) circArrow(x0 + tw + 6 + arrowW / 2, 2, 8, st.dir, isCur ? COL.pink : col, 3.2);
         if (isDone) {
           ctx.strokeStyle = '#1f9d55';
           ctx.lineWidth = 5;
@@ -627,6 +820,27 @@
           ctx.fillRect(cx - total / 2, nh / 2 - 11, total, 4);
         }
       });
+    }
+
+    // modifier badge, stuck on the corner of the note
+    if (spec.mod) {
+      const tag = spec.mod === 'peek' ? (hid ? 'TAP TO PEEK' : 'PEEK') : 'SHUFFLE';
+      ctx.save();
+      ctx.translate(nw / 2 - 52, nh / 2 - 2);
+      ctx.rotate(0.07);
+      ctx.font = '900 12px ' + FONT;
+      const bw = ctx.measureText(tag).width + 16;
+      ctx.fillStyle = COL.pink;
+      rr(-bw / 2, -10, bw, 20, 10);
+      ctx.fill();
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = COL.ink;
+      ctx.stroke();
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fff';
+      ctx.fillText(tag, 0, 1);
+      ctx.restore();
     }
     ctx.restore();
 
@@ -709,8 +923,16 @@
     ctx.shadowBlur = 0;
 
     // keys
-    kp.keys.forEach((k, i) => {
-      if (!k.label) {
+    kp.keys.forEach((base, i) => {
+      const label = lk.order[i];
+      let k = base;
+      if (label && lk.prevIdx && G.t - lk.shufT < 0.14 && lk.prevIdx[label] !== undefined) {
+        // shuffle modifier: keys slide to their new spots
+        const e = easeOutCubic((G.t - lk.shufT) / 0.14);
+        const from = kp.keys[lk.prevIdx[label]];
+        k = { x: from.x + (base.x - from.x) * e, y: from.y + (base.y - from.y) * e, w: base.w, h: base.h };
+      }
+      if (!label) {
         // little blinking LED where the 12th key would be
         const on = Math.floor(G.t * 2) % 2 === 0;
         ctx.fillStyle = on ? COL.red : '#7a1e2b';
@@ -721,12 +943,12 @@
         ctx.stroke();
         return;
       }
-      const pressed = lk.pressed && lk.pressed.i === i && G.t - lk.pressed.t < 0.1;
+      const pressed = lk.pressed && lk.pressed.label === label && G.t - lk.pressed.t < 0.1;
       const off = pressed ? 5 : 0;
       ctx.fillStyle = COL.ink;
       rr(k.x, k.y + 6, k.w, k.h, 14);
       ctx.fill();
-      ctx.fillStyle = k.label === 'DEL' ? '#ff8cc0' : pressed ? '#ffe08a' : COL.cream;
+      ctx.fillStyle = label === 'DEL' ? '#ff8cc0' : pressed ? '#ffe08a' : COL.cream;
       rr(k.x, k.y + off, k.w, k.h, 14);
       ctx.fill();
       ctx.lineWidth = 4;
@@ -734,7 +956,7 @@
       ctx.stroke();
 
       const cx = k.x + k.w / 2, cy = k.y + k.h / 2 + off;
-      if (k.label === 'DEL') {
+      if (label === 'DEL') {
         const s = Math.min(k.w, k.h) * 0.22;
         ctx.strokeStyle = COL.ink;
         ctx.fillStyle = COL.ink;
@@ -753,13 +975,115 @@
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = COL.ink;
-        ctx.fillText(k.label, cx, cy + 2);
+        ctx.fillText(label, cx, cy + 2);
       }
     });
 
     if (lk.done) {
       ctx.fillStyle = 'rgba(61,220,132,.38)';
       rr(bx, by, bw, bh, 28);
+      ctx.fill();
+    }
+  }
+
+  // ---- Drawing: slider bank -----------------------------------------------------------
+  function drawSliders(lk) {
+    const g = sliderGeom(lk.sliders.length);
+    const { bx, by, bw, bh } = g;
+    const vis = noteVis(lk);
+
+    ctx.fillStyle = 'rgba(15,0,50,.4)';
+    rr(bx, by + 10, bw, bh, 26);
+    ctx.fill();
+    const bg = ctx.createLinearGradient(0, by, 0, by + bh);
+    bg.addColorStop(0, '#c5f55a');
+    bg.addColorStop(1, '#5aa813');
+    ctx.fillStyle = bg;
+    rr(bx, by, bw, bh, 26);
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.strokeStyle = COL.ink;
+    ctx.stroke();
+    ctx.fillStyle = 'rgba(255,255,255,.22)';
+    rr(bx + 8, by + 6, bw - 16, g.p * 0.5, 8);
+    ctx.fill();
+
+    g.cols.forEach((c, i) => {
+      const s = lk.sliders[i];
+      const target = lk.spec.targets[i];
+      const cx = c.x + c.w / 2;
+
+      // slot + tick marks
+      ctx.fillStyle = COL.ink;
+      rr(cx - 10, g.top - 12, 20, g.len + 24, 10);
+      ctx.fill();
+      ctx.fillStyle = '#0d2a22';
+      rr(cx - 5, g.top - 8, 10, g.len + 16, 5);
+      ctx.fill();
+      ctx.strokeStyle = 'rgba(26,11,61,.35)';
+      ctx.lineWidth = 2;
+      for (let k = 0; k <= 10; k++) {
+        const y = sliderY(g, k / 10);
+        ctx.beginPath();
+        ctx.moveTo(cx - 17, y);
+        ctx.lineTo(cx - 12, y);
+        ctx.moveTo(cx + 12, y);
+        ctx.lineTo(cx + 17, y);
+        ctx.stroke();
+      }
+
+      // target notch: a line across the slot with arrowheads on both sides
+      if (vis > 0 || s.locked) {
+        const y = sliderY(g, target);
+        ctx.save();
+        ctx.globalAlpha = s.locked ? 1 : vis;
+        ctx.strokeStyle = s.locked ? COL.green : COL.pink;
+        ctx.fillStyle = s.locked ? COL.green : COL.pink;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(c.x + 6, y);
+        ctx.lineTo(c.x + c.w - 6, y);
+        ctx.stroke();
+        [[c.x + 1, 1], [c.x + c.w - 1, -1]].forEach(([x, d]) => {
+          ctx.beginPath();
+          ctx.moveTo(x, y - 8);
+          ctx.lineTo(x + 11 * d, y);
+          ctx.lineTo(x, y + 8);
+          ctx.closePath();
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = COL.ink;
+          ctx.stroke();
+        });
+        ctx.restore();
+      }
+
+      // handle
+      const hy = sliderY(g, s.v);
+      const hw = Math.min(c.w * 0.86, 78);
+      ctx.fillStyle = COL.ink;
+      rr(cx - hw / 2, hy - g.hh / 2 + 5, hw, g.hh, 12);
+      ctx.fill();
+      ctx.fillStyle = s.locked ? '#b8ffd2' : s.inZone ? '#fff59a' : COL.cream;
+      rr(cx - hw / 2, hy - g.hh / 2, hw, g.hh, 12);
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = s.inZone && !s.locked ? COL.yellow : COL.ink;
+      ctx.stroke();
+      ctx.strokeStyle = s.locked ? '#1f9d55' : 'rgba(26,11,61,.45)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      for (let k = -1; k <= 1; k++) {
+        ctx.beginPath();
+        ctx.moveTo(cx - hw * 0.28, hy + k * 8);
+        ctx.lineTo(cx + hw * 0.28, hy + k * 8);
+        ctx.stroke();
+      }
+    });
+
+    if (lk.done) {
+      ctx.fillStyle = 'rgba(61,220,132,.38)';
+      rr(bx, by, bw, bh, 26);
       ctx.fill();
     }
   }
@@ -906,7 +1230,7 @@
       ctx.restore();
     }
     // assist: the target number glows green on the dial face (early locks only)
-    if (spec.assist && !lk.done) {
+    if (spec.assist && !lk.done && noteVis(lk) > 0) {
       ctx.save();
       ctx.rotate(-st.n * STEP);
       ctx.fillStyle = COL.green;
@@ -1001,6 +1325,7 @@
     drawNote(lk);
     if (lk.type === 'keypad') drawKeypad(lk);
     else if (lk.type === 'barrel') drawBarrel(lk);
+    else if (lk.type === 'slider') drawSliders(lk);
     else drawDial(lk);
     ctx.restore();
   }
@@ -1128,12 +1453,14 @@
     return fixedSeed ? core.hashSeed(fixedSeed) : (Math.random() * 4294967296) >>> 0;
   }
 
-  function startGame() {
+  // seedOverride: optional string, used by the dev self-test to get a known run
+  function startGame(seedOverride) {
     audio.resume();
     G.mode = 'playing';
-    G.rng = core.makeRng(newSeed());
+    G.rng = core.makeRng(typeof seedOverride === 'string' ? core.hashSeed(seedOverride) : newSeed());
     G.n = 0;
     G.hist = { dials: 0, last: [] };
+    G.seenMods = {};
     G.timeLeft = C.startTime;
     G.score = 0;
     G.dispScore = 0;
@@ -1235,8 +1562,8 @@
     $('snd').textContent = 'Sound: ' + (audio.isMuted() ? 'OFF' : 'ON');
   }
 
-  $('play').addEventListener('click', startGame);
-  $('retry').addEventListener('click', startGame);
+  $('play').addEventListener('click', () => startGame());
+  $('retry').addEventListener('click', () => startGame());
   $('to-menu').addEventListener('click', showMenu);
   $('share').addEventListener('click', share);
   $('snd').addEventListener('click', () => {
@@ -1253,5 +1580,5 @@
   requestAnimationFrame(frame);
 
   // exposed for the dev self-test (index.html?selftest)
-  LB.game = { G, L, startGame, STEP, barrelGeom };
+  LB.game = { G, L, startGame, STEP, barrelGeom, sliderGeom, keyRect, noteVis, spawnLock };
 })();

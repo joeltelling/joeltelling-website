@@ -20,6 +20,14 @@ const howTo: [string, string][] = [
     "Drag around the dial. Follow the arrows: stop on each number, spinning the right way, then lift your finger to lock it in.",
   ],
   [
+    "Slider bank",
+    "Drag each slider onto its notch and let go. Land inside the sweet spot and it locks in with a clunk.",
+  ],
+  [
+    "Curveballs",
+    "Later locks come with twists. PEEK hides the code after a few seconds (tap the note to look again, for a price). SHUFFLE rearranges the keypad after every tap.",
+  ],
+  [
     "The clock",
     "Every lock shows the time it will pay out, and that number drains while you dither. Beat the par time and you gain seconds. Miss it and you bleed them. Par gets tighter as you go.",
   ],
