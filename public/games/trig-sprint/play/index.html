@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Trig Sprint</title>
+<link rel="icon" href="assets/icon.svg">
+<style>
+  :root { --u: 1px; --bg: #070a14; --fg: #eafcff; --c1: #37f2c9; --c2: #ff4fd8; --dim: rgba(234,252,255,.6); }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+  html, body { margin: 0; height: 100%; background: #000; color: var(--fg); overflow: hidden; touch-action: none;
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif; }
+  #stage { position: absolute; left: 50%; top: 50%; width: min(100vw, calc(100vh * 16 / 9)); aspect-ratio: 16 / 9;
+    transform: translate(-50%, -50%); background: var(--bg); overflow: hidden; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .screen { position: absolute; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center;
+    gap: calc(14 * var(--u)); text-align: center; }
+  .screen.on { display: flex; }
+  .dim { background: radial-gradient(ellipse at center, rgba(4,6,16,.55), rgba(4,6,16,.88)); backdrop-filter: blur(calc(3 * var(--u))); }
+  h1.logo { margin: 0; font-size: calc(104 * var(--u)); line-height: .9; font-weight: 900; letter-spacing: calc(4 * var(--u)); font-style: italic;
+    background: linear-gradient(100deg, var(--c1), #fff 45%, var(--c2)); -webkit-background-clip: text; background-clip: text; color: transparent;
+    filter: drop-shadow(0 0 calc(18 * var(--u)) rgba(55,242,201,.5)); }
+  .sub { font-size: calc(20 * var(--u)); color: var(--dim); letter-spacing: calc(6 * var(--u)); text-transform: uppercase; margin-bottom: calc(10 * var(--u)); }
+  h2 { margin: 0; font-size: calc(46 * var(--u)); font-weight: 900; letter-spacing: calc(3 * var(--u)); text-transform: uppercase; }
+  .btn { font: inherit; font-weight: 800; font-size: calc(24 * var(--u)); letter-spacing: calc(2 * var(--u)); text-transform: uppercase; color: #06121a;
+    background: linear-gradient(180deg, #6bffe3, var(--c1)); border: calc(3 * var(--u)) solid #06121a; border-radius: calc(10 * var(--u));
+    padding: calc(10 * var(--u)) calc(34 * var(--u)); min-width: calc(260 * var(--u)); cursor: pointer;
+    box-shadow: 0 calc(5 * var(--u)) 0 #0c6c5a, 0 0 calc(24 * var(--u)) rgba(55,242,201,.35); transition: transform .08s, filter .08s; }
+  .btn:hover, .btn:focus-visible { transform: translateY(calc(-2 * var(--u))) scale(1.03); filter: brightness(1.12); outline: none; }
+  .btn:active { transform: translateY(calc(3 * var(--u))); box-shadow: 0 calc(2 * var(--u)) 0 #0c6c5a; }
+  .btn.alt { background: linear-gradient(180deg, #ff9bec, var(--c2)); box-shadow: 0 calc(5 * var(--u)) 0 #8a1d78, 0 0 calc(24 * var(--u)) rgba(255,79,216,.35); }
+  .btn.ghost { background: rgba(255,255,255,.08); color: var(--fg); border-color: rgba(255,255,255,.35); box-shadow: none; }
+  .btn.small { font-size: calc(17 * var(--u)); padding: calc(7 * var(--u)) calc(20 * var(--u)); min-width: 0; }
+  .row { display: flex; gap: calc(16 * var(--u)); align-items: center; justify-content: center; flex-wrap: wrap; }
+  .cards { display: flex; gap: calc(22 * var(--u)); }
+  .card { width: calc(270 * var(--u)); padding: calc(18 * var(--u)); border-radius: calc(16 * var(--u)); background: rgba(10,16,34,.8);
+    border: calc(3 * var(--u)) solid var(--cc, #37f2c9); box-shadow: 0 0 calc(26 * var(--u)) color-mix(in srgb, var(--cc) 45%, transparent);
+    display: flex; flex-direction: column; gap: calc(8 * var(--u)); text-align: center; cursor: pointer; transition: transform .12s; }
+  .card:hover { transform: translateY(calc(-6 * var(--u))); }
+  .card h3 { margin: 0; font-size: calc(28 * var(--u)); text-transform: uppercase; letter-spacing: calc(1 * var(--u)); color: var(--cc); }
+  .card .tag { color: var(--dim); font-size: calc(15 * var(--u)); }
+  .stars { font-size: calc(22 * var(--u)); letter-spacing: calc(2 * var(--u)); color: #ffd84d; }
+  .bar { height: calc(12 * var(--u)); background: rgba(255,255,255,.12); border-radius: calc(7 * var(--u)); overflow: hidden; }
+  .bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--cc), #fff); }
+  .meta { display: flex; justify-content: space-between; font-size: calc(14 * var(--u)); color: var(--dim); }
+  .coins { color: #ffd84d; font-weight: 800; }
+  .toggle { display: flex; align-items: center; gap: calc(16 * var(--u)); font-size: calc(22 * var(--u)); min-width: calc(480 * var(--u)); justify-content: space-between; }
+  input[type=range] { width: calc(250 * var(--u)); accent-color: var(--c1); }
+  input[type=checkbox] { width: calc(26 * var(--u)); height: calc(26 * var(--u)); accent-color: var(--c1); }
+  .swatches { display: flex; gap: calc(10 * var(--u)); }
+  .sw { width: calc(40 * var(--u)); height: calc(40 * var(--u)); border-radius: calc(8 * var(--u)); border: calc(3 * var(--u)) solid #0006; cursor: pointer; }
+  .sw.on { outline: calc(4 * var(--u)) solid #fff; }
+  #iconPrev { width: calc(120 * var(--u)); height: calc(120 * var(--u)); }
+  .help { font-size: calc(19 * var(--u)); line-height: 1.5; max-width: calc(760 * var(--u)); color: #dff; text-align: left; }
+  .help b { color: var(--c1); }
+  .help kbd { background: #fff2; border: 1px solid #fff5; border-radius: 5px; padding: 0 calc(7 * var(--u)); font-family: inherit; font-weight: 700; }
+  .stats { display: grid; grid-template-columns: repeat(2, auto); gap: calc(6 * var(--u)) calc(40 * var(--u)); font-size: calc(24 * var(--u)); text-align: left; }
+  .stats span:nth-child(odd) { color: var(--dim); }
+  .stats span:nth-child(even) { font-weight: 800; text-align: right; }
+  .big { font-size: calc(70 * var(--u)); font-weight: 900; }
+  .hint { color: var(--dim); font-size: calc(16 * var(--u)); }
+  #hudbtns { position: absolute; right: calc(10 * var(--u)); bottom: calc(10 * var(--u)); display: none; gap: calc(10 * var(--u)); z-index: 3; }
+  #hudbtns.on { display: flex; }
+  .round { width: calc(74 * var(--u)); height: calc(74 * var(--u)); border-radius: 50%; border: calc(3 * var(--u)) solid #fff8; background: rgba(0,0,0,.35);
+    color: #fff; font: 800 calc(15 * var(--u)) inherit; display: grid; place-items: center; touch-action: none; }
+  .round.fire { background: rgba(255,79,216,.35); }
+  #pauseBtn { position: absolute; left: calc(10 * var(--u)); bottom: calc(10 * var(--u)); z-index: 3; display: none; }
+  #pauseBtn.on { display: grid; width: calc(46 * var(--u)); height: calc(46 * var(--u)); font-size: calc(18 * var(--u)); }
+  #fade { position: absolute; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .25s; z-index: 5; }
+  #err { position: fixed; left: 0; bottom: 0; right: 0; background: #400; color: #fff; font: 12px monospace; z-index: 99; display: none; white-space: pre-wrap; max-height: 30vh; overflow: auto; }
+  #loading { position: absolute; inset: 0; display: grid; place-items: center; font-size: calc(24 * var(--u)); color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <div id="loading">Loading…</div>
+
+  <section class="screen" id="scr-title">
+    <div class="sub">a rhythm platformer</div>
+    <h1 class="logo">TRIG<br>SPRINT</h1>
+    <svg viewBox="0 0 400 40" style="width:calc(420*var(--u));height:calc(40*var(--u))" aria-hidden="true">
+      <path id="sinePath" d="" fill="none" stroke="url(#g1)" stroke-width="4" stroke-linecap="round"/>
+      <defs><linearGradient id="g1"><stop offset="0" stop-color="#37f2c9"/><stop offset="1" stop-color="#ff4fd8"/></linearGradient></defs>
+    </svg>
+    <div class="row" style="flex-direction:column;margin-top:calc(8*var(--u))">
+      <button class="btn" data-go="select" autofocus>Play</button>
+      <div class="row">
+        <button class="btn alt small" data-go="icon">Icon</button>
+        <button class="btn ghost small" data-go="settings">Settings</button>
+        <button class="btn ghost small" data-go="help">How to play</button>
+      </div>
+    </div>
+    <div class="hint">Space / click / tap to jump &nbsp;·&nbsp; X / right-click to shoot</div>
+  </section>
+
+  <section class="screen dim" id="scr-select">
+    <h2>Select Level</h2>
+    <div class="cards" id="cards"></div>
+    <div class="row">
+      <label class="toggle" style="min-width:0;gap:calc(10*var(--u));font-size:calc(20*var(--u))"><input type="checkbox" id="practiceChk"> Practice mode (checkpoints)</label>
+    </div>
+    <button class="btn ghost small" data-go="title">Back</button>
+  </section>
+
+  <section class="screen dim" id="scr-settings">
+    <h2>Settings</h2>
+    <label class="toggle">Music <input type="range" id="setMusic" min="0" max="1" step="0.05"></label>
+    <label class="toggle">Sound effects <input type="range" id="setSfx" min="0" max="1" step="0.05"></label>
+    <label class="toggle">Screen shake <input type="checkbox" id="setShake"></label>
+    <label class="toggle">Reduced particles <input type="checkbox" id="setLite"></label>
+    <label class="toggle">Show on-screen buttons <input type="checkbox" id="setTouch"></label>
+    <button class="btn" data-go="back">Done</button>
+  </section>
+
+  <section class="screen dim" id="scr-icon">
+    <h2>Choose your icon</h2>
+    <canvas id="iconPrev" width="240" height="240"></canvas>
+    <div class="hint">Primary</div><div class="swatches" id="sw1"></div>
+    <div class="hint">Secondary</div><div class="swatches" id="sw2"></div>
+    <button class="btn" data-go="back">Done</button>
+  </section>
+
+  <section class="screen dim" id="scr-help">
+    <h2>How to play</h2>
+    <div class="help">
+      <p><b>Jump / fly / flip:</b> <kbd>Space</kbd> <kbd>↑</kbd> <kbd>W</kbd> click or tap. Hold to keep jumping as a cube, to rise as the ship, to zig-zag as the wave. Tap to flip the ball or hop the UFO.</p>
+      <p><b>Shoot:</b> <kbd>X</kbd> <kbd>Shift</kbd> right-click, or the FIRE button. The ship fires automatically. Shoot drones, orbiters and turrets (and their bullets!) for points and combos.</p>
+      <p><b>Orbs</b> need a fresh click while you touch them. <b>Pads</b> launch you automatically. <b>Portals</b> change your vehicle or gravity. Collect the three <b>π coins</b>.</p>
+      <p><b>Practice mode:</b> <kbd>Z</kbd> drops a checkpoint, <kbd>Backspace</kbd> removes it. &nbsp; <kbd>Esc</kbd> pauses.</p>
+    </div>
+    <button class="btn" data-go="back">Got it</button>
+  </section>
+
+  <section class="screen dim" id="scr-pause">
+    <h2>Paused</h2>
+    <button class="btn" id="btnResume">Resume</button>
+    <button class="btn alt" id="btnRestart">Restart</button>
+    <button class="btn ghost" id="btnPractice">Toggle practice</button>
+    <button class="btn ghost" id="btnQuit">Quit to menu</button>
+  </section>
+
+  <section class="screen dim" id="scr-complete">
+    <div class="sub">level complete</div>
+    <div class="big" id="cName">—</div>
+    <div class="stats" id="cStats"></div>
+    <div class="row">
+      <button class="btn" id="btnNext">Next level</button>
+      <button class="btn alt" id="btnReplay">Replay</button>
+      <button class="btn ghost" id="btnMenu">Menu</button>
+    </div>
+  </section>
+
+  <div id="pauseBtn" class="round" role="button" aria-label="Pause">II</div>
+  <div id="hudbtns"><div id="fireBtn" class="round fire">FIRE</div></div>
+  <div id="fade"></div>
+</div>
+<div id="err"></div>
+
+<script>
+  window.addEventListener('error', function (e) { var d = document.getElementById('err'); d.style.display = 'block'; d.textContent += (e.message || e) + ' @' + (e.filename || '').split('/').pop() + ':' + e.lineno + '\n'; });
+  window.addEventListener('unhandledrejection', function (e) { var d = document.getElementById('err'); d.style.display = 'block'; d.textContent += 'Unhandled: ' + (e.reason && e.reason.stack || e.reason) + '\n'; });
+</script>
+<script src="js/sim.js"></script>
+<script src="js/levels.js"></script>
+<script src="js/solutions.js"></script>
+<script src="js/audio.js"></script>
+<script src="js/render.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
