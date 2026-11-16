@@ -107,6 +107,50 @@
     },
     PEEK_AGAIN: ['Cheater!', 'Memory: not great.', 'Okay, one more look.', 'Peeking costs. Nothing is free.'],
 
+    // Practice run (first launch, or the "How to play" button): [coach title, coach text] per lock
+    TRAIN: [
+      ['Tap the code!', 'The code is on the sticky note. Tap those same digits on the keypad.'],
+      ['Spin the wheels!', 'Swipe each wheel until it matches the note. It opens by itself.'],
+      ['Crank the dial!', 'Spin to the number, following the arrow. Lift your finger to lock it.'],
+      ['Slide it!', 'Drag each handle onto its pink notch, then let go.'],
+      ['Final exam: the clock', 'That bar is the time you would EARN. It drains while you dither. Be quick!'],
+    ],
+    TRAIN_OWNERS: [
+      'Practice Lock (Be Gentle)',
+      'Practice Wheels (They Spin!)',
+      'Practice Dial (Very Retro)',
+      'Practice Sliders (Slippery)',
+      'The Final Practice Lock',
+    ],
+    TRAIN_OK: ['Nailed it!', 'Natural talent!', 'The lock is scared.', 'Look at you go!', 'Crime pays!', 'Easy, right?'],
+    TRAIN_WRONG: ['Oops! Practice is free.', 'Nope! (No penalty. Yet.)', 'Mistakes are free in here.'],
+
+    // Level names + a tagline each. Past the last one the list laps (see levelName in game.js).
+    LEVELS: [
+      ["Grandma's Shed", 'Warm-up. Mostly cookies.'],
+      ['The Gym Locker Room', 'It smells. You will cope.'],
+      ['Office Basement', "Somebody's labeled yogurt lives here."],
+      ['Pirate Ship', 'Arr. The locks are mildly cursed.'],
+      ['Suspicious Cheese Vault', 'Cheddar security, gouda guards.'],
+      ["The Mayor's Mansion", 'Wigs. So many wigs.'],
+      ['Wizard Tower', 'The locks are rude on purpose.'],
+      ['Moon Base', 'Zero gravity, full anxiety.'],
+      ["Dragon's Pantry", 'Do not wake the snacks.'],
+      ["The Final Boss's Fridge", 'Nobody has ever opened this.'],
+      ['Pigeon Illuminati HQ', 'They have been watching.'],
+      ['Heist Headquarters', "You made it. Don't blink."],
+    ],
+    LEVEL_CLEAR: [
+      'Vault cleared!', 'Crime wave!', 'Snacks secured.', 'Another one bites the dust.',
+      'Locksmiths are filing complaints.', 'Getaway time!', 'Nobody saw a thing.',
+    ],
+    LEVEL_FLAWLESS: ['Flawless!', 'Not a single oops!', 'Surgeon hands!', 'Suspiciously perfect.'],
+    // shown on the level card when a curveball debuts
+    NEW_MOD: {
+      peek: ['NEW: PEEK', 'The code vanishes after a few seconds. Tap the note to look again (-1.5s).'],
+      shuffle: ['NEW: SHUFFLE', 'Keypad keys move after every tap. Stay sharp.'],
+    },
+
     BUSTED_TITLES: ['BUSTED!', "TIME'S UP!", 'CAUGHT!', 'OH NO!'],
     BUSTED_QUIPS: [
       'The owner came home with snacks.',

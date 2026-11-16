@@ -10,6 +10,14 @@ export const metadata: Metadata = {
 const GAME_URL = "/games/lock-buster/play/index.html";
 
 const howTo: [string, string][] = [
+  [
+    "Practice run",
+    "The first time you press Play you get a quick guided practice: no clock, no penalties, with hints on the lock. Replay it any time with the How to play button.",
+  ],
+  [
+    "Levels",
+    "A run is a chain of levels, each a short string of locks. Clear a level for bonus time and points. The clock carries over, so the time you earn is yours to keep. Reach level 4 and you can start future runs there.",
+  ],
   ["Keypad", "Tap the digits on the sticky note. The code is right there. You just have to be fast."],
   [
     "Barrel wheels",

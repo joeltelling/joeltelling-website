@@ -160,7 +160,125 @@ h2 {
 @keyframes wobble { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg) translateY(-3px); } }
 @keyframes look { 0%, 100% { transform: translateX(0); } 30% { transform: translateX(4px); } 60% { transform: translateX(-2px); } }
 
-body.menu #hud { visibility: hidden; }
+body.menu #hud, body.training #hud { visibility: hidden; }
+
+/* ---------- Practice coach (sits where the HUD is) ---------- */
+#coach {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 14px; right: 14px;
+  min-height: 74px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  background: var(--cream);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 0 5px 0 var(--ink);
+  animation: coach-in 0.3s cubic-bezier(0.2, 1.5, 0.4, 1);
+}
+#coach.swap { animation: none; }
+@keyframes coach-in { from { transform: translateY(-14px) scale(0.96); opacity: 0; } }
+#coach .ctext { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+#coach b { font-size: 17px; line-height: 1.05; color: #d11e75; }
+#coach span { font-size: 13px; line-height: 1.2; font-weight: 700; }
+#coach .skip {
+  align-self: flex-start;
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 900;
+  color: var(--ink);
+  background: rgba(26, 11, 61, 0.1);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 4px 9px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
+/* ---------- Level strip (in the HUD) ---------- */
+#lvl {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 7px;
+  font-size: 11px;
+  line-height: 1;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #e9dcff;
+  text-shadow: 0 2px 0 var(--ink);
+}
+#lvl-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#lvl-pips { display: flex; gap: 4px; flex: none; }
+#lvl-pips i {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: rgba(0, 0, 0, 0.35);
+}
+#lvl-pips i.on { background: var(--teal); }
+#lvl-pips i.cur { background: var(--yellow); transform: scale(1.3); }
+#bar { margin-top: 6px; }
+
+/* ---------- Level card ---------- */
+.kicker { margin: 0 0 4px; font-size: 13px; letter-spacing: 2px; color: var(--teal); font-weight: 900; text-shadow: 0 2px 0 var(--ink); }
+h2.sm { font-size: 40px; margin-bottom: 8px; }
+.keep { margin: 0 0 12px; font-size: 14px; color: #d9c7ff; }
+.next {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+}
+.next b { display: block; font-size: 22px; color: var(--yellow); line-height: 1.1; margin-top: 2px; }
+.next i { display: block; font-size: 14px; color: #ffe9a8; margin-top: 3px; }
+.newmod {
+  margin-top: 10px;
+  padding: 8px 10px;
+  background: var(--pink);
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  transform: rotate(-1.5deg);
+}
+.newmod b { display: block; font-size: 17px; color: #fff; margin: 0; text-shadow: 0 2px 0 var(--ink); }
+.newmod span { font-size: 13px; line-height: 1.2; }
+
+/* ---------- Start-level chips (checkpoints) ---------- */
+.cp { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
+.cp .lab { font-size: 12px; letter-spacing: 1px; color: #d9c7ff; text-transform: uppercase; }
+.cp button {
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 14px;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  padding: 5px 12px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.cp button.sel { background: var(--teal); color: var(--ink); }
+
+.rules { list-style: none; margin: 4px 0 18px; padding: 0; text-align: left; }
+.rules li {
+  margin: 0 0 8px;
+  padding: 8px 12px;
+  font-size: 14px;
+  line-height: 1.25;
+  background: rgba(255, 255, 255, 0.1);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+}
+.rules b { color: var(--yellow); }
+.card > .best { text-align: center; margin: 12px 0 0; }
+.best:empty { display: none; }
 .tag { margin: 20px 0 18px; font-size: 19px; line-height: 1.25; color: #fff; text-shadow: 0 2px 0 var(--ink); }
 .how { margin: 16px 0 10px; font-size: 15px; line-height: 1.35; color: #d9c7ff; }
 .how b { color: var(--yellow); }

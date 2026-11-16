@@ -61,10 +61,28 @@
     hist: { dials: 0, last: [] }, // run history handed to core.makeLock
     seenMods: {}, // modifiers/lock types already explained this run
     best: loadBest(),
+    training: null, // { i } while the practice run is active (no clock, no score)
+    tutorialDone: loadFlag('lockbuster.tutorial'),
+    bestLevel: +loadStr('lockbuster.bestLevel') || 1, // furthest level reached (1-based)
+    startLevel: 0, // 0-based level the next run starts at (checkpoints)
+    levelReached: 1, // 1-based, this run
+    lvl: { mistakes: 0 }, // stats for the level in progress
   };
 
   function loadBest() {
     try { return +localStorage.getItem('lockbuster.best') || 0; } catch (e) { return 0; }
+  }
+  function loadStr(k) {
+    try { return localStorage.getItem(k); } catch (e) { return null; }
+  }
+  function saveStr(k, v) {
+    try { localStorage.setItem(k, String(v)); } catch (e) {}
+  }
+  function loadFlag(k) {
+    try { return localStorage.getItem(k) === '1'; } catch (e) { return false; }
+  }
+  function saveFlag(k) {
+    try { localStorage.setItem(k, '1'); } catch (e) {}
   }
   function saveBest(v) {
     try { localStorage.setItem('lockbuster.best', String(v)); } catch (e) {}
@@ -205,10 +223,73 @@
     };
   }
 
-  function spawnLock() {
-    const spec = core.makeLock(G.rng, G.n, G.hist);
-    G.n++;
+  // ---- Levels ---------------------------------------------------------------------
+  // [name, tagline] for a 0-based level. The list laps with a silly suffix.
+  function levelName(level) {
+    const list = content.LEVELS;
+    const [name, tag] = list[level % list.length];
+    const lap = Math.floor(level / list.length);
+    const suffix = lap === 0 ? '' : lap === 1 ? ': Electric Boogaloo' : ' ' + (lap + 1);
+    return [name + suffix, tag];
+  }
+
+  function updateLevelHud(spec) {
+    $('lvl-name').textContent = 'Level ' + (spec.level + 1) + ' · ' + levelName(spec.level)[0];
+    let pips = '';
+    for (let i = 0; i < spec.levelSize; i++) pips += '<i class="' + (i < spec.pos ? 'on' : i === spec.pos ? 'cur' : '') + '"></i>';
+    $('lvl-pips').innerHTML = pips;
+  }
+
+  // The level is cleared: pause the clock, pay out, preview what's next.
+  function levelClear(spec) {
+    const flawless = G.lvl.mistakes === 0;
+    const levelNo = spec.level + 1;
+    const pts = Math.round(C.levelPoints * levelNo * (flawless ? 2 : 1));
+    const before = G.timeLeft;
+    G.timeLeft = Math.min(C.maxTime, G.timeLeft + C.levelBonus);
+    G.score += pts;
+    G.mode = 'levelup';
+    G.cur = null;
+    document.body.classList.remove('danger');
+    bumpEl($('score'));
+    bumpEl($('time'));
+
+    const next = levelName(spec.level + 1);
+    $('lv-kicker').textContent = 'LEVEL ' + levelNo + ' CLEARED';
+    $('lv-title').textContent = rand(content.LEVEL_CLEAR);
+    $('lv-flaw').textContent = rand(content.LEVEL_FLAWLESS).toUpperCase() + ' x2 POINTS';
+    $('lv-flaw').classList.toggle('hidden', !flawless);
+    $('lv-time').textContent = '+' + (G.timeLeft - before).toFixed(0) + 's';
+    $('lv-pts').textContent = '+' + pts.toLocaleString();
+    $('lv-left').textContent = G.timeLeft.toFixed(1) + 's';
+    $('lv-next').textContent = 'Level ' + (levelNo + 1) + ': ' + next[0];
+    $('lv-tag').textContent = next[1];
+    const nm = core.levelNewMod(spec.level + 1);
+    $('lv-new').classList.toggle('hidden', !nm);
+    if (nm) {
+      $('lv-new-t').textContent = content.NEW_MOD[nm][0];
+      $('lv-new-d').textContent = content.NEW_MOD[nm][1];
+    }
+    audio.step();
+    // let the unlock animation play out before the card covers it
+    setTimeout(() => {
+      if (G.mode === 'levelup') $('level').classList.remove('hidden');
+    }, 450);
+  }
+
+  function nextLevel() {
+    if (G.mode !== 'levelup') return;
+    $('level').classList.add('hidden');
+    G.mode = 'playing';
+    spawnLock();
+  }
+
+  // forced: a hand-made spec (practice run). Otherwise the generator picks the next lock.
+  function spawnLock(forced) {
+    const spec = forced || core.makeLock(G.rng, G.n, G.hist);
+    if (!forced) G.n++;
     G.cur = {
+      meter: !G.training || G.training.i === TRAIN_PLAN.length - 1, // practice only shows the bonus meter on its last lock
       spec,
       type: spec.type,
       born: G.t,
@@ -241,6 +322,23 @@
       peekUntil: 0,
     };
 
+    if (G.training) {
+      setCoach(G.training.i);
+      return;
+    }
+
+    // Level bookkeeping + banner on the first lock of each level
+    G.levelReached = spec.level + 1;
+    updateLevelHud(spec);
+    if (spec.pos === 0) {
+      G.lvl = { mistakes: 0 };
+      const [lname, ltag] = levelName(spec.level);
+      // sits in the gap under the bonus meter so it doesn't hide the lock
+      const by = L.noteY + 150;
+      pop('LEVEL ' + (spec.level + 1), L.cx, by, { size: 34, color: COL.teal, life: 1.5, vy: -4 });
+      pop(lname + (spec.level === 0 ? ': ' + ltag : ''), L.cx, by + 30, { size: 15, color: '#fff', life: 1.5, vy: -4 });
+    }
+
     // Modifiers: explain each one the first time it shows up in a run.
     if (spec.mod && !G.seenMods[spec.mod]) {
       G.seenMods[spec.mod] = true;
@@ -268,7 +366,17 @@
   }
 
   function wrongEntry(lk, penalty, msg) {
+    if (G.training) {
+      // practice: mistakes are free (and we say so)
+      lk.mistakes++;
+      G.shake = 8;
+      audio.wrong();
+      buzz([40, 30, 50]);
+      pop(rand(content.TRAIN_WRONG), L.cx, L.cy - 10, { size: 26, color: '#ff8a96', life: 1.3 });
+      return;
+    }
     lk.mistakes++;
+    G.lvl.mistakes++;
     G.streak = 0;
     G.timeLeft = Math.max(0, G.timeLeft - penalty);
     G.shake = 14;
@@ -279,7 +387,114 @@
     pop('-' + penalty + 's', L.cx, L.cy + 28, { size: 26, color: COL.red, life: 1.0 });
   }
 
+  // ---- Practice run ---------------------------------------------------------------
+  // Hand-picked locks (keypad, barrel, dial, slider, keypad-with-clock), no real clock,
+  // no score, no penalties. A coach bubble and on-lock hints say what to do.
+  const TRAIN_PLAN = [0, 2, 3, 4, 1]; // lock indexes fed to the generator
+
+  function trainingSpec(i) {
+    const rng = core.makeRng(core.hashSeed('practice' + i));
+    const spec = core.makeLock(rng, TRAIN_PLAN[i], { dials: 0, last: [] });
+    spec.owner = content.TRAIN_OWNERS[i];
+    if (spec.type === 'slider') {
+      spec.targets = spec.targets.slice(0, 2);
+      spec.start = spec.start.slice(0, 2);
+      spec.tol = 0.07;
+    }
+    if (spec.type === 'dial') spec.steps = spec.steps.slice(0, 2);
+    return spec;
+  }
+
+  function setCoach(i) {
+    const [title, body] = content.TRAIN[i];
+    const el = $('coach');
+    $('coach-title').textContent = title;
+    $('coach-body').textContent = body;
+    el.style.animation = 'none';
+    void el.offsetWidth;
+    el.style.animation = '';
+  }
+
+  function resetRunState() {
+    G.n = 0;
+    G.hist = { dials: 0, last: [] };
+    G.seenMods = {};
+    G.timeLeft = C.startTime;
+    G.score = 0;
+    G.dispScore = 0;
+    G.streak = 0;
+    G.bestStreak = 0;
+    G.locks = 0;
+    G.fastest = Infinity;
+    G.loot = [];
+    G.leaving = [];
+    G.parts = [];
+    G.pops = [];
+    G.shake = 0;
+    G.redFlash = 0;
+    G.hbT = 0;
+    G.overShown = false;
+    G.levelReached = 1;
+    G.lvl = { mistakes: 0 };
+    document.body.classList.remove('danger');
+    $('menu').classList.add('hidden');
+    $('over').classList.add('hidden');
+    $('ready').classList.add('hidden');
+    $('level').classList.add('hidden');
+  }
+
+  function startTraining() {
+    audio.resume();
+    resetRunState();
+    G.mode = 'playing';
+    G.training = { i: 0 };
+    document.body.classList.remove('menu');
+    document.body.classList.add('training');
+    $('coach').classList.remove('hidden');
+    layout();
+    spawnLock(trainingSpec(0));
+  }
+
+  function trainingUnlock(lk) {
+    const spec = lk.spec;
+    const elapsed = Math.max(0.2, G.t - lk.startT);
+    lk.done = true;
+    lk.doneT = G.t;
+    G.leaving.push(lk);
+    audio.unlock(0);
+    buzz([20, 40, 30]);
+    confetti(L.cx, L.cy, 34);
+    pop(rand(content.TRAIN_OK), L.cx, L.cy - 24, { size: 38, color: COL.yellow, life: 1.0 });
+    if (lk.meter) {
+      const b = core.timeBonus(spec.par, elapsed, spec.n);
+      pop('That is +' + b.total.toFixed(1) + 's on the real clock!', L.cx, L.cy + 18, { size: 20, color: COL.teal, life: 1.4 });
+    }
+    G.training.i++;
+    if (G.training.i >= TRAIN_PLAN.length) finishTraining();
+    else spawnLock(trainingSpec(G.training.i));
+  }
+
+  // practice finished or skipped: show the rules of the real game
+  function finishTraining() {
+    G.tutorialDone = true;
+    saveFlag('lockbuster.tutorial');
+    G.training = null;
+    G.mode = 'ready';
+    G.cur = null;
+    document.body.classList.remove('training');
+    document.body.classList.add('menu');
+    $('coach').classList.add('hidden');
+    // let the last unlock animation play out before the card covers it
+    setTimeout(() => {
+      if (G.mode === 'ready') $('ready').classList.remove('hidden');
+    }, 450);
+  }
+
   function unlock(lk) {
+    if (G.training) {
+      trainingUnlock(lk);
+      return;
+    }
     const spec = lk.spec;
     const elapsed = Math.max(0.2, G.t - lk.startT);
     const clean = lk.mistakes === 0;
@@ -312,7 +527,8 @@
     bumpEl($('time'));
     if (clean && G.streak % 3 === 0) bumpEl($('combo'));
 
-    spawnLock();
+    if (spec.pos === spec.levelSize - 1) levelClear(spec);
+    else spawnLock();
   }
 
   // ---- Keypad input ------------------------------------------------------------
@@ -844,7 +1060,7 @@
     }
     ctx.restore();
 
-    if (!lk.done) drawBonusMeter(lk, nw, ny + nh);
+    if (!lk.done && lk.meter) drawBonusMeter(lk, nw, ny + nh);
   }
 
   // Live "time you'd earn if you finished right now". It drains while you dither,
@@ -1327,6 +1543,83 @@
     else if (lk.type === 'barrel') drawBarrel(lk);
     else if (lk.type === 'slider') drawSliders(lk);
     else drawDial(lk);
+    if (G.training && lk === G.cur && !lk.done) drawHints(lk);
+    ctx.restore();
+  }
+
+  // ---- Practice-run hints: show, don't tell --------------------------------------------
+  function drawHints(lk) {
+    const pulse = 0.5 + 0.5 * Math.sin(G.t * 6);
+    ctx.save();
+    if (lk.type === 'keypad') {
+      if (lk.wrongT) { ctx.restore(); return; }
+      const code = lk.spec.code;
+      const bad = lk.entered.findIndex((d, i) => d !== code[i]);
+      const label = bad >= 0 ? 'DEL' : code[lk.entered.length];
+      if (label === undefined) { ctx.restore(); return; }
+      const k = keyRect(lk, label);
+      ctx.strokeStyle = COL.yellow;
+      ctx.lineWidth = 5;
+      ctx.shadowColor = COL.yellow;
+      ctx.shadowBlur = 10 + pulse * 12;
+      const e = 4 + pulse * 3;
+      rr(k.x - e, k.y - e, k.w + 2 * e, k.h + 2 * e, 18);
+      ctx.stroke();
+    } else if (lk.type === 'barrel') {
+      const g = barrelGeom(lk.wheels.length);
+      g.cols.forEach((c, i) => {
+        const w = lk.wheels[i];
+        const cur = mod(Math.round(w.v), BD);
+        if (w.drag || cur === lk.spec.code[i]) return;
+        // higher digits scroll in when the finger moves up
+        const dir = mod(lk.spec.code[i] - cur, BD) <= BD / 2 ? -1 : 1;
+        const ph = (G.t * 1.3) % 1;
+        const y = c.y + c.h / 2 + dir * (ph - 0.5) * g.cell * 1.2;
+        const s = Math.min(c.w * 0.26, 20);
+        ctx.globalAlpha = 0.95 * Math.sin(ph * Math.PI);
+        ctx.fillStyle = '#fff';
+        ctx.strokeStyle = COL.ink;
+        ctx.lineWidth = 3;
+        ctx.lineJoin = 'round';
+        const cx = c.x + c.w / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, y + dir * s);
+        ctx.lineTo(cx - s, y - dir * s * 0.6);
+        ctx.lineTo(cx + s, y - dir * s * 0.6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      });
+    } else if (lk.type === 'slider') {
+      const g = sliderGeom(lk.sliders.length);
+      g.cols.forEach((c, i) => {
+        const s = lk.sliders[i];
+        if (s.locked || s.drag) return;
+        const cx = c.x + c.w / 2;
+        const y0 = sliderY(g, s.v);
+        const y1 = sliderY(g, lk.spec.targets[i]);
+        const p = (G.t * 0.8) % 1.5;
+        const y = y0 + (y1 - y0) * easeOutCubic(clamp(p, 0, 1));
+        ctx.globalAlpha = p < 1 ? 0.95 : 0.95 * (1 - (p - 1) / 0.5);
+        // dotted path, then a "finger" gliding along it
+        ctx.setLineDash([2, 9]);
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(cx, y0);
+        ctx.lineTo(cx, y1);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.strokeStyle = COL.ink;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, y, 15, 0, TAU);
+        ctx.fill();
+        ctx.stroke();
+      });
+    }
     ctx.restore();
   }
 
@@ -1392,7 +1685,8 @@
     G.t += dt;
 
     if (G.mode === 'playing') {
-      G.timeLeft -= dt;
+      const live = !G.training; // practice run: the clock is frozen
+      if (live) G.timeLeft -= dt;
       const lk = G.cur;
       if (lk && lk.wrongT && G.t - lk.wrongT > 0.3) {
         lk.entered = [];
@@ -1400,7 +1694,7 @@
       }
       if (lk && lk.type === 'barrel' && !lk.done) updateBarrel(lk, dt);
       // heartbeat gets faster as the clock runs down
-      if (G.timeLeft < 10 && G.timeLeft > 0) {
+      if (live && G.timeLeft < 10 && G.timeLeft > 0) {
         G.hbT -= dt;
         if (G.hbT <= 0) {
           audio.heartbeat();
@@ -1408,8 +1702,8 @@
           G.hbT = 0.45 + 0.55 * (G.timeLeft / 10);
         }
       }
-      document.body.classList.toggle('danger', G.timeLeft < 10);
-      if (G.timeLeft <= 0) {
+      document.body.classList.toggle('danger', live && G.timeLeft < 10);
+      if (live && G.timeLeft <= 0) {
         G.timeLeft = 0;
         gameOver();
       }
@@ -1456,29 +1750,18 @@
   // seedOverride: optional string, used by the dev self-test to get a known run
   function startGame(seedOverride) {
     audio.resume();
+    resetRunState();
     G.mode = 'playing';
+    G.training = null;
     G.rng = core.makeRng(typeof seedOverride === 'string' ? core.hashSeed(seedOverride) : newSeed());
-    G.n = 0;
-    G.hist = { dials: 0, last: [] };
-    G.seenMods = {};
-    G.timeLeft = C.startTime;
-    G.score = 0;
-    G.dispScore = 0;
-    G.streak = 0;
-    G.bestStreak = 0;
-    G.locks = 0;
-    G.fastest = Infinity;
-    G.loot = [];
-    G.leaving = [];
-    G.parts = [];
-    G.pops = [];
-    G.shake = 0;
-    G.redFlash = 0;
-    G.hbT = 0;
-    G.overShown = false;
-    $('menu').classList.add('hidden');
-    $('over').classList.add('hidden');
-    document.body.classList.remove('menu');
+    $('coach').classList.add('hidden');
+    document.body.classList.remove('menu', 'training');
+    // checkpoint start: begin at the first lock of that level, with the difficulty that implies
+    G.n = core.levelStart(G.startLevel);
+    G.hist.dials = Math.floor(G.n / 4);
+    if (G.startLevel >= core.MOD_INTRO_LEVEL.peek) G.seenMods.peek = true;
+    if (G.startLevel >= core.MOD_INTRO_LEVEL.shuffle) G.seenMods.shuffle = true;
+    if (G.startLevel > 0) G.seenMods.slider = true;
     layout();
     spawnLock();
   }
@@ -1498,6 +1781,12 @@
       G.best = G.score;
       saveBest(G.best);
     }
+    const isBestLevel = G.levelReached > G.bestLevel;
+    if (isBestLevel) {
+      G.bestLevel = G.levelReached;
+      saveStr('lockbuster.bestLevel', G.bestLevel);
+    }
+    $('st-level').textContent = G.levelReached;
     $('over-title').textContent = rand(content.BUSTED_TITLES);
     $('over-quip').textContent = rand(content.BUSTED_QUIPS);
     $('over-score').textContent = G.score.toLocaleString();
@@ -1526,19 +1815,46 @@
 
   function showMenu() {
     G.mode = 'menu';
+    G.training = null;
     G.cur = null;
     G.leaving = [];
     $('over').classList.add('hidden');
+    $('level').classList.add('hidden');
+    $('ready').classList.add('hidden');
+    $('coach').classList.add('hidden');
     $('menu').classList.remove('hidden');
     document.body.classList.add('menu');
-    $('best-menu').textContent = G.best ? 'Best: ' + G.best.toLocaleString() : '';
+    document.body.classList.remove('training');
+    $('best-menu').textContent = G.best ? 'Best: ' + G.best.toLocaleString() + ' · Level ' + G.bestLevel : '';
+    renderCheckpoints();
+  }
+
+  // "Start at" chips: level 1, 4, 7... once you have reached them
+  function renderCheckpoints() {
+    const box = $('cp');
+    const every = C.checkpointEvery;
+    const opts = [];
+    for (let lv = 0; lv + 1 <= G.bestLevel; lv += every) opts.push(lv);
+    if (opts.indexOf(G.startLevel) < 0) G.startLevel = 0;
+    box.classList.toggle('hidden', opts.length < 2);
+    box.innerHTML = '<span class="lab">Start at</span>';
+    opts.forEach((lv) => {
+      const b = document.createElement('button');
+      b.textContent = 'Level ' + (lv + 1);
+      b.className = lv === G.startLevel ? 'sel' : '';
+      b.addEventListener('click', () => {
+        G.startLevel = lv;
+        renderCheckpoints();
+      });
+      box.appendChild(b);
+    });
   }
 
   async function share() {
     // when embedded at /games/lock-buster/play/, share the friendly page instead
     const url = location.origin + location.pathname.replace(/\/play\/(index\.html)?$/, '');
     const msg =
-      'LOCK BUSTER: I cracked ' + G.locks + ' locks for ' + G.score.toLocaleString() +
+      'LOCK BUSTER: I cracked ' + G.locks + ' locks (level ' + G.levelReached + ') for ' + G.score.toLocaleString() +
       ' pts. Rank: ' + core.rankFor(G.locks) + '. Think you can beat me?';
     const btn = $('share');
     try {
@@ -1562,7 +1878,14 @@
     $('snd').textContent = 'Sound: ' + (audio.isMuted() ? 'OFF' : 'ON');
   }
 
-  $('play').addEventListener('click', () => startGame());
+  // first launch: practice run before the real thing (the rules card follows it)
+  $('play').addEventListener('click', () => (G.tutorialDone || fixedSeed ? startGame() : startTraining()));
+  $('howto').addEventListener('click', () => startTraining());
+  $('coach-skip').addEventListener('click', finishTraining);
+  $('lv-go').addEventListener('click', nextLevel);
+  $('ready-go').addEventListener('click', () => startGame());
+  $('ready-again').addEventListener('click', () => startTraining());
+  $('ready-menu').addEventListener('click', showMenu);
   $('retry').addEventListener('click', () => startGame());
   $('to-menu').addEventListener('click', showMenu);
   $('share').addEventListener('click', share);
@@ -1580,5 +1903,5 @@
   requestAnimationFrame(frame);
 
   // exposed for the dev self-test (index.html?selftest)
-  LB.game = { G, L, startGame, STEP, barrelGeom, sliderGeom, keyRect, noteVis, spawnLock };
+  LB.game = { G, L, startGame, startTraining, finishTraining, makeTrainingSpec: trainingSpec, TRAIN_PLAN, nextLevel, levelName, unlock, STEP, barrelGeom, sliderGeom, keyRect, noteVis, spawnLock };
 })();

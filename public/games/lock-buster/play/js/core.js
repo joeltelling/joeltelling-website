@@ -24,7 +24,40 @@
     maxBonus: 8, // cap on a single lock's bonus
     parTighten: 0.025, // par shrinks this fraction per lock cracked...
     parFloor: 0.4, // ...down to this fraction of the original
+
+    // Levels: a level is a short run of locks. The clock carries over between levels.
+    levelBonus: 3, // seconds added to the clock for clearing a level
+    levelPoints: 250, // points for clearing a level, times the level number (x2 if flawless)
+    checkpointEvery: 3, // you can start a run at level 1, 4, 7... once you have reached it
   };
+
+  // ---- Levels ----------------------------------------------------------------
+  // Levels are derived from the lock number, so a seeded run always has the same shape.
+  const LEVEL_SIZES = [5, 6, 6, 7]; // locks in levels 1..4; every level after that has LEVEL_MAX
+  const LEVEL_MAX = 8;
+  const levelSize = (level) => (level < LEVEL_SIZES.length ? LEVEL_SIZES[level] : LEVEL_MAX);
+  function levelStart(level) {
+    let n = 0;
+    for (let l = 0; l < level; l++) n += levelSize(l);
+    return n;
+  }
+  // 0-based lock number n -> { level (0-based), pos (0-based lock within it), size, start }
+  function levelOf(n) {
+    let level = 0, start = 0;
+    for (;;) {
+      const size = levelSize(level);
+      if (n < start + size) return { level, pos: n - start, size, start };
+      start += size;
+      level++;
+    }
+  }
+  // Curveballs are introduced one per level: the new one is guaranteed in that level
+  // (from lock MOD_INTRO_AT on), then both can show up at a rising rate.
+  const MOD_INTRO_LEVEL = { peek: 1, shuffle: 2 }; // 0-based level where each first appears
+  const MOD_INTRO_AT = 2;
+  const levelModChance = (level) => (level < 1 ? 0 : Math.min(0.45, 0.1 + 0.07 * level));
+  // what's new when this level starts? (for the level card)
+  const levelNewMod = (level) => Object.keys(MOD_INTRO_LEVEL).find((k) => MOD_INTRO_LEVEL[k] === level) || null;
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const mod = (v, n) => ((v % n) + n) % n;
@@ -76,6 +109,11 @@
   //   { dials: how many dial locks so far, last: recent lock types }
   function makeLock(rng, n, hist) {
     hist = hist || { dials: 0, last: [] };
+    hist.intro = hist.intro || {};
+    const lv = levelOf(n);
+    // is this level's brand-new curveball still waiting to be introduced?
+    const introMod = levelNewMod(lv.level);
+    const introPending = !!introMod && !hist.intro[lv.level] && lv.pos >= MOD_INTRO_AT;
 
     let type;
     if (n < 2) type = 'keypad';
@@ -86,11 +124,15 @@
       // random, but never the same type three times running
       const l = hist.last;
       const banned = l.length >= 2 && l[l.length - 1] === l[l.length - 2] ? l[l.length - 1] : null;
-      type = pick(rng, LOCK_TYPES.filter((t) => t !== banned));
+      if (introPending && introMod === 'shuffle' && banned !== 'keypad') type = 'keypad'; // shuffle needs a keypad
+      else type = pick(rng, LOCK_TYPES.filter((t) => t !== banned));
     }
 
     const spec = {
       n,
+      level: lv.level,
+      pos: lv.pos,
+      levelSize: lv.size,
       type,
       owner: pick(rng, content.OWNERS),
       loot: pick(rng, content.LOOT),
@@ -149,11 +191,18 @@
       spec.base = 150 * count;
       hist.dials++;
     }
-    // Modifiers ("make it worse"): start at lock 9 and get more common, up to ~45%.
+    // Modifiers ("make it worse"): peek from level 2, shuffle from level 3, rising to ~45%.
     spec.mod = null;
-    if (n >= 8 && rng() < Math.min(0.45, 0.06 * (n - 7))) {
-      const pool = type === 'keypad' ? ['peek', 'shuffle'] : ['peek'];
-      spec.mod = pick(rng, pool);
+    const allowed = [];
+    if (lv.level >= MOD_INTRO_LEVEL.peek) allowed.push('peek');
+    if (lv.level >= MOD_INTRO_LEVEL.shuffle && type === 'keypad') allowed.push('shuffle');
+    if (introPending && allowed.indexOf(introMod) >= 0) {
+      spec.mod = introMod;
+      hist.intro[lv.level] = true;
+    } else if (allowed.length && rng() < levelModChance(lv.level)) {
+      spec.mod = pick(rng, allowed);
+    }
+    if (spec.mod) {
       if (spec.mod === 'peek') {
         // the code disappears after a few seconds; tap the note to peek again (costs time)
         const size = spec.code ? spec.code.length : spec.targets ? spec.targets.length : spec.steps.length;
@@ -212,6 +261,11 @@
     pick,
     circDist,
     makeLock,
+    levelSize,
+    levelStart,
+    levelOf,
+    levelNewMod,
+    MOD_INTRO_LEVEL,
     parScale,
     timeBonus,
     comboMult,

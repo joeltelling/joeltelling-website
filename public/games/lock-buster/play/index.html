@@ -30,6 +30,7 @@
       <span class="label" id="streak">STREAK 0</span>
       <span class="value" id="combo">x1</span>
     </div>
+    <div id="lvl"><span id="lvl-name">LEVEL 1</span><span id="lvl-pips"></span></div>
     <div id="bar"><i id="barfill"></i></div>
   </div>
 
@@ -51,9 +52,61 @@
       <p class="tag">Crack locks. Steal snacks.<br>Panic gracefully.</p>
       <button id="play" class="btn big">PLAY</button>
       <p class="how">The code is <b>right there</b>.<br>You just have to be <b>fast</b>.</p>
+      <p id="best-menu" class="best"></p>
+      <div id="cp" class="cp hidden"></div>
       <div class="row">
-        <span id="best-menu" class="best"></span>
+        <button id="howto" class="btn small">How to play</button>
         <button id="snd" class="btn small">Sound: ON</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Practice-run coach (replaces the HUD while practising) -->
+  <div id="coach" class="hidden">
+    <div class="ctext">
+      <b id="coach-title"></b>
+      <span id="coach-body"></span>
+    </div>
+    <button id="coach-skip" class="skip">Skip</button>
+  </div>
+
+  <!-- Between levels: the clock is paused, the time you earned is yours -->
+  <div id="level" class="overlay hidden">
+    <div class="card">
+      <p class="kicker" id="lv-kicker">LEVEL 1 CLEARED</p>
+      <h2 class="sm" id="lv-title">Vault cleared!</h2>
+      <p id="lv-flaw" class="newbest hidden">FLAWLESS! x2 points</p>
+      <div class="stats">
+        <div><b id="lv-time">+3s</b><span>clock bonus</span></div>
+        <div><b id="lv-pts">+250</b><span>points</span></div>
+        <div><b id="lv-left">30s</b><span>on the clock</span></div>
+      </div>
+      <p class="keep">Time you earn is yours to keep.</p>
+      <div class="next">
+        <span class="kicker">NEXT UP</span>
+        <b id="lv-next">Level 2</b>
+        <i id="lv-tag"></i>
+        <div id="lv-new" class="newmod hidden"><b id="lv-new-t"></b><span id="lv-new-d"></span></div>
+      </div>
+      <button id="lv-go" class="btn big">GO!</button>
+    </div>
+  </div>
+
+  <!-- After practice: the rules of the real game -->
+  <div id="ready" class="overlay hidden">
+    <div class="card">
+      <h2>READY?</h2>
+      <p class="quip">Practice over. Here is the real deal:</p>
+      <ul class="rules">
+        <li><b>The clock.</b> You start with 30 seconds. Hit zero and you are busted.</li>
+        <li><b>Be fast.</b> Every lock shows the time it will pay you. It drains while you dither. Beat it and the clock grows. Time you earn is yours to keep.</li>
+        <li><b>Be careful.</b> Wrong code? That costs 2 seconds.</li>
+        <li><b>Streaks.</b> Clean cracks in a row multiply your score.</li>
+      </ul>
+      <button id="ready-go" class="btn big">LET'S GO!</button>
+      <div class="row">
+        <button id="ready-again" class="btn small">Practice again</button>
+        <button id="ready-menu" class="btn small">Menu</button>
       </div>
     </div>
   </div>
@@ -66,8 +119,9 @@
       <div class="score-big"><span id="over-score">0</span></div>
       <div id="over-new" class="newbest hidden">NEW BEST!</div>
       <div class="stats">
+        <div><b id="st-level">1</b><span>level</span></div>
         <div><b id="st-locks">0</b><span>locks</span></div>
-        <div><b id="st-streak">0</b><span>best streak</span></div>
+        <div><b id="st-streak">0</b><span>streak</span></div>
         <div><b id="st-fast">-</b><span>fastest</span></div>
       </div>
       <p class="rank">Rank: <b id="over-rank"></b></p>
