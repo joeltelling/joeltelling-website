@@ -18,6 +18,14 @@ const howTo: [string, string][] = [
     "Levels",
     "A run is a chain of levels, each a short string of locks. Clear a level for bonus time and points. The clock carries over, so the time you earn is yours to keep. Reach level 4 and you can start future runs there.",
   ],
+  [
+    "Difficulty",
+    "Pick Newb, Normal or Ultra-Stress on the menu. Newb gives you a roomy clock and soft penalties. Ultra-Stress gives you a tiny clock, brutal penalties and a bigger score multiplier. Each has its own best score.",
+  ],
+  [
+    "Boss locks",
+    "From level 2 on, the last lock of every level is a boss: a gauntlet of mini-locks, one after another. Beat them all for big points and bonus time.",
+  ],
   ["Keypad", "Tap the digits on the sticky note. The code is right there. You just have to be fast."],
   [
     "Barrel wheels",

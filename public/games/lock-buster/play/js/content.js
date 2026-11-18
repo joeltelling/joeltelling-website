@@ -102,7 +102,7 @@
 
     // first time a modifier shows up in a run, explain it (with attitude)
     MOD_INTRO: {
-      peek: ['PEEK!', 'The code vanishes soon. Tap the note to look again (-1.5s)'],
+      peek: ['PEEK!', 'The code vanishes soon. Tap the note to look again ({cost})'],
       shuffle: ['SHUFFLE!', 'The keys move after every tap. Good luck, have fun'],
     },
     PEEK_AGAIN: ['Cheater!', 'Memory: not great.', 'Okay, one more look.', 'Peeking costs. Nothing is free.'],
@@ -147,8 +147,37 @@
     LEVEL_FLAWLESS: ['Flawless!', 'Not a single oops!', 'Surgeon hands!', 'Suspiciously perfect.'],
     // shown on the level card when a curveball debuts
     NEW_MOD: {
-      peek: ['NEW: PEEK', 'The code vanishes after a few seconds. Tap the note to look again (-1.5s).'],
+      boss: ['NEW: BOSS LOCKS', 'Every level now ends with a boss: a few mini-locks back to back. Beat it for big points and bonus time.'],
+      peek: ['NEW: PEEK', 'The code vanishes after a few seconds. Tap the note to look again ({cost}).'],
       shuffle: ['NEW: SHUFFLE', 'Keypad keys move after every tap. Stay sharp.'],
+    },
+
+    // Boss locks: one per level (aligned with LEVELS; the list laps with them)
+    BOSSES: [
+      'Gerald the Padlock', 'Big Brass Brenda', 'Sir Locks-a-Lot', 'Captain Deadbolt',
+      'The Combination Kraken', 'Mayor McLatch', 'Archmage Hasp', 'Moon Moose Mk. II',
+      'Dragon Dave', 'The Final Boss (Again)', 'Supreme Pigeon', 'The Heist Machine',
+    ],
+    BOSS_TAUNTS: [
+      '"You will never open me."', '"I have a bad attitude and three locks."',
+      '"Did you bring snacks? Too late."', '"My combination is a secret. Mostly."',
+      '"I went to lock school."', '"Nobody has ever beaten me. Twice."',
+      '"I am not a padlock. I am THE padlock."', '"Cute thumbs."',
+    ],
+    BOSS_LOOT: [
+      'the boss\'s lunch money', 'a tiny crown. Very tiny', 'a trophy that says BOSS (ironic)',
+      'a golden key to nothing', 'a framed photo of the boss', 'the boss\'s secret cookie recipe',
+      'an extremely large padlock. Why', 'a coupon for one (1) rematch',
+    ],
+    BOSS_DOWN: ['BOSS DEFEATED!', 'BOSS BUSTED!', 'THE BOSS IS OPEN!', 'BOSS: UNLOCKED!'],
+    STAGE_CLEAR: ['Stage cleared!', 'One down!', 'Keep going!', 'The boss sweats.'],
+    BOSS_PILL: ['Boss down', 'Boss busted', 'Boss defeated'],
+
+    // The three difficulty tiers, shown under the selector on the menu
+    DIFFICULTY_TAGS: {
+      newb: 'Roomy clock, soft penalties. Deep breaths.',
+      normal: 'The way it was meant to be played.',
+      ultra: 'Tiny clock. Brutal penalties. Why would you.',
     },
 
     BUSTED_TITLES: ['BUSTED!', "TIME'S UP!", 'CAUGHT!', 'OH NO!'],

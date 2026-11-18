@@ -110,6 +110,20 @@
       tone({ f: 150, f2: 80, dur: 0.3, vol: 0.25, type: 'sawtooth' });
       tone({ f: 95, f2: 60, dur: 0.3, vol: 0.2, type: 'square' });
     },
+    // a boss appears: low ominous rumble climbing to a stab
+    boss() {
+      noise({ lp: 300, dur: 0.5, vol: 0.4 });
+      tone({ f: 80, f2: 140, dur: 0.45, vol: 0.3, type: 'sawtooth' });
+      tone({ f: 233, dur: 0.14, vol: 0.18, type: 'square', delay: 0.3 });
+      tone({ f: 220, dur: 0.3, vol: 0.2, type: 'square', delay: 0.46 });
+    },
+    // a boss falls: big fanfare
+    bossWin() {
+      noise({ lp: 900, dur: 0.18, vol: 0.5 });
+      [523, 659, 784, 1047, 784, 1047, 1319].forEach((f, i) =>
+        tone({ f, dur: 0.16, vol: 0.2, type: 'triangle', delay: 0.05 + i * 0.09 })
+      );
+    },
     // lub-dub, played faster as the clock runs low
     heartbeat() {
       tone({ f: 75, f2: 45, dur: 0.13, vol: 0.7, type: 'sine' });

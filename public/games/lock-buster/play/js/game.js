@@ -60,18 +60,31 @@
     overShown: false,
     hist: { dials: 0, last: [] }, // run history handed to core.makeLock
     seenMods: {}, // modifiers/lock types already explained this run
-    best: loadBest(),
+    diffKey: initialDiff(), // newb | normal | ultra
+    best: 0, // best score on the chosen difficulty (see loadProgress)
+    bestLevel: 1, // furthest level reached on the chosen difficulty (1-based)
     training: null, // { i } while the practice run is active (no clock, no score)
     tutorialDone: loadFlag('lockbuster.tutorial'),
-    bestLevel: +loadStr('lockbuster.bestLevel') || 1, // furthest level reached (1-based)
     startLevel: 0, // 0-based level the next run starts at (checkpoints)
     levelReached: 1, // 1-based, this run
     lvl: { mistakes: 0 }, // stats for the level in progress
+    boss: null, // { spec, i } while a boss gauntlet is running
   };
 
-  function loadBest() {
-    try { return +localStorage.getItem('lockbuster.best') || 0; } catch (e) { return 0; }
+  // Normal keeps the original storage keys, so existing saves carry over.
+  const dsuf = (k) => (k === 'normal' ? '' : '.' + k);
+  function initialDiff() {
+    const q = new URLSearchParams(location.search).get('diff');
+    const k = q || loadStr('lockbuster.diff');
+    return core.DIFFICULTY_KEYS.indexOf(k) >= 0 ? k : 'normal';
   }
+  function loadProgress() {
+    G.best = +loadStr('lockbuster.best' + dsuf(G.diffKey)) || 0;
+    G.bestLevel = +loadStr('lockbuster.bestLevel' + dsuf(G.diffKey)) || 1;
+  }
+  const D = () => core.DIFFICULTY[G.diffKey];
+  const fmtCost = (s, cost) => s.replace('{cost}', '-' + cost + 's');
+
   function loadStr(k) {
     try { return localStorage.getItem(k); } catch (e) { return null; }
   }
@@ -85,8 +98,9 @@
     try { localStorage.setItem(k, '1'); } catch (e) {}
   }
   function saveBest(v) {
-    try { localStorage.setItem('lockbuster.best', String(v)); } catch (e) {}
+    saveStr('lockbuster.best' + dsuf(G.diffKey), v);
   }
+  loadProgress();
 
   // ---- Helpers ---------------------------------------------------------------
   const rand = (a) => a[Math.floor(Math.random() * a.length)];
@@ -234,20 +248,32 @@
   }
 
   function updateLevelHud(spec) {
-    $('lvl-name').textContent = 'Level ' + (spec.level + 1) + ' · ' + levelName(spec.level)[0];
+    const bs = spec.bossStage;
     let pips = '';
-    for (let i = 0; i < spec.levelSize; i++) pips += '<i class="' + (i < spec.pos ? 'on' : i === spec.pos ? 'cur' : '') + '"></i>';
+    if (bs) {
+      // boss gauntlet: one diamond per stage
+      $('lvl-name').textContent = 'BOSS · ' + bs.name;
+      for (let i = 0; i < bs.of; i++) pips += '<i class="boss ' + (i < bs.i ? 'on' : i === bs.i ? 'cur' : '') + '"></i>';
+    } else {
+      $('lvl-name').textContent = 'Level ' + (spec.level + 1) + ' · ' + levelName(spec.level)[0];
+      for (let i = 0; i < spec.levelSize; i++) {
+        const boss = core.isBossLevel(spec.level) && i === spec.levelSize - 1; // the last lock is the boss
+        pips += '<i class="' + (boss ? 'boss ' : '') + (i < spec.pos ? 'on' : i === spec.pos ? 'cur' : '') + '"></i>';
+      }
+    }
     $('lvl-pips').innerHTML = pips;
+    document.body.classList.toggle('boss', !!bs);
   }
 
   // The level is cleared: pause the clock, pay out, preview what's next.
   function levelClear(spec) {
     const flawless = G.lvl.mistakes === 0;
     const levelNo = spec.level + 1;
-    const pts = Math.round(C.levelPoints * levelNo * (flawless ? 2 : 1));
+    const pts = Math.round(C.levelPoints * levelNo * (flawless ? 2 : 1) * D().scoreMult);
     const before = G.timeLeft;
-    G.timeLeft = Math.min(C.maxTime, G.timeLeft + C.levelBonus);
+    G.timeLeft = Math.min(D().maxTime, G.timeLeft + D().levelBonus);
     G.score += pts;
+    document.body.classList.remove('boss');
     G.mode = 'levelup';
     G.cur = null;
     document.body.classList.remove('danger');
@@ -259,16 +285,22 @@
     $('lv-title').textContent = rand(content.LEVEL_CLEAR);
     $('lv-flaw').textContent = rand(content.LEVEL_FLAWLESS).toUpperCase() + ' x2 POINTS';
     $('lv-flaw').classList.toggle('hidden', !flawless);
+    const bd = G.lvl.boss;
+    $('lv-boss').classList.toggle('hidden', !bd);
+    if (bd) $('lv-boss').textContent = rand(content.BOSS_PILL).toUpperCase() + ': ' + bd.name + ' +' + bd.pts.toLocaleString();
     $('lv-time').textContent = '+' + (G.timeLeft - before).toFixed(0) + 's';
     $('lv-pts').textContent = '+' + pts.toLocaleString();
     $('lv-left').textContent = G.timeLeft.toFixed(1) + 's';
     $('lv-next').textContent = 'Level ' + (levelNo + 1) + ': ' + next[0];
     $('lv-tag').textContent = next[1];
+    $('lv-boss-next').textContent = core.isBossLevel(spec.level + 1)
+      ? 'Boss at the end: ' + content.BOSSES[(spec.level + 1) % content.BOSSES.length]
+      : '';
     const nm = core.levelNewMod(spec.level + 1);
     $('lv-new').classList.toggle('hidden', !nm);
     if (nm) {
       $('lv-new-t').textContent = content.NEW_MOD[nm][0];
-      $('lv-new-d').textContent = content.NEW_MOD[nm][1];
+      $('lv-new-d').textContent = fmtCost(content.NEW_MOD[nm][1], D().peekCost);
     }
     audio.step();
     // let the unlock animation play out before the card covers it
@@ -285,9 +317,15 @@
   }
 
   // forced: a hand-made spec (practice run). Otherwise the generator picks the next lock.
+  // (a boss stage is also "forced": the boss was generated as a whole, one lock number).
   function spawnLock(forced) {
-    const spec = forced || core.makeLock(G.rng, G.n, G.hist);
-    if (!forced) G.n++;
+    let spec = forced;
+    if (!spec) {
+      const made = core.makeLock(G.rng, G.n, G.hist);
+      G.n++;
+      G.boss = made.stages ? { spec: made, i: 0 } : null;
+      spec = made.stages ? made.stages[0] : made;
+    }
     G.cur = {
       meter: !G.training || G.training.i === TRAIN_PLAN.length - 1, // practice only shows the bonus meter on its last lock
       spec,
@@ -330,6 +368,20 @@
     // Level bookkeeping + banner on the first lock of each level
     G.levelReached = spec.level + 1;
     updateLevelHud(spec);
+    const bs = spec.bossStage;
+    if (bs && bs.i === 0) {
+      // a boss appears
+      const boss = G.boss.spec;
+      audio.boss();
+      buzz([60, 40, 90]);
+      G.shake = 10;
+      pop('BOSS LOCK!', L.cx, L.cy - 70, { size: 44, color: COL.red, life: 2.3, vy: -6 });
+      pop(boss.name, L.cx, L.cy - 28, { size: 24, color: '#fff', life: 2.3, vy: -6 });
+      pop(boss.taunt, L.cx, L.cy + 4, { size: 15, color: '#ffc2dd', life: 2.3, vy: -6 });
+      pop(bs.of + ' stages. Beat them all.', L.cx, L.cy + 32, { size: 15, color: COL.yellow, life: 2.3, vy: -6 });
+    } else if (bs) {
+      pop('STAGE ' + (bs.i + 1) + ' OF ' + bs.of, L.cx, L.noteY + 150, { size: 26, color: COL.pink, life: 1.3, vy: -4 });
+    }
     if (spec.pos === 0) {
       G.lvl = { mistakes: 0 };
       const [lname, ltag] = levelName(spec.level);
@@ -344,7 +396,7 @@
       G.seenMods[spec.mod] = true;
       const [title, sub] = content.MOD_INTRO[spec.mod];
       pop(title, L.cx, L.cy - 40, { size: 40, color: COL.pink, life: 2.6, vy: -6 });
-      pop(sub, L.cx, L.cy + 2, { size: 16, color: '#fff', life: 2.6, vy: -6 });
+      pop(fmtCost(sub, spec.peekCost), L.cx, L.cy + 2, { size: 16, color: '#fff', life: 2.6, vy: -6 });
     }
     if (spec.type === 'slider' && !G.seenMods.slider) {
       G.seenMods.slider = true;
@@ -355,7 +407,7 @@
     if (spec.type === 'dial' && spec.dialIndex === 0) {
       pop('Line the green dot up', L.cx, L.cy - L.dialR * 0.62, { size: 22, color: '#fff', life: 3, vy: -6 });
       pop('with the red marker!', L.cx, L.cy - L.dialR * 0.62 + 26, { size: 22, color: '#fff', life: 3, vy: -6 });
-    } else if (spec.type === 'dial' && spec.dialIndex === 3) {
+    } else if (spec.type === 'dial' && spec.dialIndex === D().assistDials) {
       pop('TRAINING WHEELS OFF!', L.cx, L.cy - L.dialR * 0.62, { size: 30, color: COL.pink, life: 2.4, vy: -6 });
       pop('(the green dot is gone. good luck)', L.cx, L.cy - L.dialR * 0.62 + 28, { size: 16, color: '#fff', life: 2.4, vy: -6 });
     }
@@ -417,9 +469,11 @@
 
   function resetRunState() {
     G.n = 0;
-    G.hist = { dials: 0, last: [] };
+    G.hist = { dials: 0, last: [], diff: G.diffKey };
     G.seenMods = {};
-    G.timeLeft = C.startTime;
+    G.timeLeft = D().startTime;
+    G.boss = null;
+    document.body.classList.remove('boss');
     G.score = 0;
     G.dispScore = 0;
     G.streak = 0;
@@ -476,6 +530,8 @@
 
   // practice finished or skipped: show the rules of the real game
   function finishTraining() {
+    $('r-start').textContent = D().startTime;
+    $('r-wrong').textContent = D().wrongPenalty;
     G.tutorialDone = true;
     saveFlag('lockbuster.tutorial');
     G.training = null;
@@ -496,18 +552,22 @@
       return;
     }
     const spec = lk.spec;
+    const bs = spec.bossStage;
+    const finalStage = !bs || bs.i === bs.of - 1; // the lock (or boss) is done after this one
     const elapsed = Math.max(0.2, G.t - lk.startT);
     const clean = lk.mistakes === 0;
-    const bonus = core.timeBonus(spec.par, elapsed, spec.n);
+    const bonus = core.timeBonus(spec.par, elapsed, spec.n, spec.diff);
     if (clean) G.streak++;
     G.bestStreak = Math.max(G.bestStreak, G.streak);
     const sc = core.scoreLock(spec, elapsed, clean, G.streak);
 
-    G.timeLeft = Math.min(C.maxTime, G.timeLeft + bonus.total);
+    G.timeLeft = Math.min(D().maxTime, G.timeLeft + bonus.total);
     G.score += sc.points;
-    G.locks++;
+    if (finalStage) {
+      G.locks++; // a whole boss counts as one lock
+      G.loot.push(bs ? G.boss.spec.loot : spec.loot);
+    }
     G.fastest = Math.min(G.fastest, elapsed);
-    G.loot.push(spec.loot);
 
     lk.done = true;
     lk.doneT = G.t;
@@ -516,18 +576,45 @@
     // juice
     audio.unlock(G.streak);
     buzz([20, 40, 30]);
-    confetti(L.cx, L.cy, 34 + Math.min(G.streak, 10) * 3);
     const streakMsg = clean && content.STREAK[G.streak];
     const quip = streakMsg || (sc.speedMult > 2.2 ? rand(content.UNLOCK_FAST) : rand(content.UNLOCK));
-    pop(quip, L.cx, L.cy - 24, { size: 38, color: COL.yellow, life: 0.95 });
-    pop('LOOT: ' + spec.loot, L.cx, L.cy + 14, { size: 17, color: '#fff', life: 0.95, vy: -30 });
-    pop('+' + bonus.total.toFixed(1) + 's', L.cx - W * 0.22, L.cy + 52, { size: 24, color: COL.teal, life: 0.95 });
-    pop('+' + sc.points, L.cx + W * 0.22, L.cy + 52, { size: 24, color: COL.yellow, life: 0.95 });
+    if (bs && !finalStage) {
+      // between boss stages: keep it snappy
+      confetti(L.cx, L.cy, 22);
+      pop(rand(content.STAGE_CLEAR), L.cx, L.cy - 24, { size: 34, color: COL.pink, life: 0.9 });
+      pop('+' + bonus.total.toFixed(1) + 's', L.cx - W * 0.22, L.cy + 30, { size: 24, color: COL.teal, life: 0.9 });
+      pop('+' + sc.points, L.cx + W * 0.22, L.cy + 30, { size: 24, color: COL.yellow, life: 0.9 });
+    } else if (bs) {
+      // the boss falls
+      const bpts = Math.round(C.bossPoints * (spec.level + 1) * D().scoreMult);
+      const bsec = Math.min(D().maxTime, G.timeLeft + D().bossBonus) - G.timeLeft;
+      G.timeLeft += bsec;
+      G.score += bpts;
+      G.lvl.boss = { name: bs.name, pts: bpts };
+      audio.bossWin();
+      buzz([30, 40, 30, 40, 80]);
+      G.shake = 12;
+      confetti(L.cx, L.cy, 110);
+      pop(rand(content.BOSS_DOWN), L.cx, L.cy - 40, { size: 40, color: COL.yellow, life: 1.2 });
+      pop('LOOT: ' + G.boss.spec.loot, L.cx, L.cy - 4, { size: 17, color: '#fff', life: 1.2, vy: -30 });
+      pop('+' + (bonus.total + bsec).toFixed(1) + 's', L.cx - W * 0.22, L.cy + 36, { size: 24, color: COL.teal, life: 1.2 });
+      pop('+' + (sc.points + bpts).toLocaleString(), L.cx + W * 0.22, L.cy + 36, { size: 24, color: COL.yellow, life: 1.2 });
+      G.boss = null;
+    } else {
+      confetti(L.cx, L.cy, 34 + Math.min(G.streak, 10) * 3);
+      pop(quip, L.cx, L.cy - 24, { size: 38, color: COL.yellow, life: 0.95 });
+      pop('LOOT: ' + spec.loot, L.cx, L.cy + 14, { size: 17, color: '#fff', life: 0.95, vy: -30 });
+      pop('+' + bonus.total.toFixed(1) + 's', L.cx - W * 0.22, L.cy + 52, { size: 24, color: COL.teal, life: 0.95 });
+      pop('+' + sc.points, L.cx + W * 0.22, L.cy + 52, { size: 24, color: COL.yellow, life: 0.95 });
+    }
     bumpEl($('score'));
     bumpEl($('time'));
     if (clean && G.streak % 3 === 0) bumpEl($('combo'));
 
-    if (spec.pos === spec.levelSize - 1) levelClear(spec);
+    if (bs && !finalStage) {
+      G.boss.i++;
+      spawnLock(G.boss.spec.stages[G.boss.i]);
+    } else if (spec.pos === spec.levelSize - 1) levelClear(spec);
     else spawnLock();
   }
 
@@ -588,7 +675,7 @@
     } else {
       lk.wrongT = G.t;
       lk.lockedUntil = G.t + 0.3;
-      wrongEntry(lk, C.wrongPenalty, rand(content.WRONG));
+      wrongEntry(lk, D().wrongPenalty, rand(content.WRONG));
     }
   }
 
@@ -639,7 +726,7 @@
 
     if (lk.lastDir && lk.lastDir !== st.dir) {
       lk.lastDir = null;
-      wrongEntry(lk, C.wrongWayPenalty, rand(content.WRONG_WAY));
+      wrongEntry(lk, D().wrongWayPenalty, rand(content.WRONG_WAY));
       return;
     }
     // locked in!
@@ -804,12 +891,13 @@
   }
 
   function peekAgain(lk) {
+    const cost = lk.spec.peekCost || 1.5;
     lk.peekUntil = G.t + 1.4;
-    G.timeLeft = Math.max(0, G.timeLeft - 1.5);
+    G.timeLeft = Math.max(0, G.timeLeft - cost);
     buzz(15);
     audio.key(1);
     pop(rand(content.PEEK_AGAIN), L.cx, L.noteY + 120, { size: 22, color: COL.pink, life: 1.0 });
-    pop('-1.5s', L.cx, L.noteY + 148, { size: 22, color: COL.red, life: 1.0 });
+    pop('-' + cost + 's', L.cx, L.noteY + 148, { size: 22, color: COL.red, life: 1.0 });
   }
 
   // ---- Pointer wiring ------------------------------------------------------------
@@ -924,10 +1012,11 @@
     let size = 16;
     ctx.font = '900 ' + size + 'px ' + FONT;
     const maxW = W - 28;
-    const label = spec.owner;
+    const bs = spec.bossStage;
+    const label = bs ? 'BOSS: ' + spec.owner + ' (' + (bs.i + 1) + '/' + bs.of + ')' : spec.owner;
     const wMeasured = ctx.measureText(label).width;
     if (wMeasured > maxW) size = Math.max(11, Math.floor((size * maxW) / wMeasured));
-    text(label, W / 2, L.noteY + 11, size, '#fff', { lw: 4 });
+    text(label, W / 2, L.noteY + 11, size, bs ? '#ffb3d9' : '#fff', { lw: 4 });
 
     ctx.save();
     ctx.translate(W / 2, ny + nh / 2);
@@ -1067,7 +1156,7 @@
   // so every single lock has its own little deadline.
   function drawBonusMeter(lk, nw, noteBottom) {
     const elapsed = Math.max(0, G.t - lk.startT);
-    const b = core.timeBonus(lk.spec.par, elapsed, lk.spec.n);
+    const b = core.timeBonus(lk.spec.par, elapsed, lk.spec.n, lk.spec.diff);
     const frac = clamp((b.total - C.minBonus) / Math.max(0.01, b.max - C.minBonus), 0, 1);
     const empty = frac <= 0.001;
     const col = frac > 0.5 ? COL.teal : frac > 0.2 ? COL.yellow : COL.red;
@@ -1672,7 +1761,7 @@
     timeEl.textContent = tl.toFixed(1);
     timeEl.className = 'value' + (tl < 10 ? ' low' : tl < 20 ? ' warn' : '');
     const fill = $('barfill');
-    fill.style.transform = 'scaleX(' + clamp(tl / C.maxTime, 0, 1) + ')';
+    fill.style.transform = 'scaleX(' + clamp(tl / D().maxTime, 0, 1) + ')';
     fill.className = tl < 10 ? 'low' : tl < 20 ? 'warn' : '';
     $('score').textContent = Math.round(G.dispScore).toLocaleString();
     const mult = core.comboMult(G.streak);
@@ -1759,8 +1848,9 @@
     // checkpoint start: begin at the first lock of that level, with the difficulty that implies
     G.n = core.levelStart(G.startLevel);
     G.hist.dials = Math.floor(G.n / 4);
-    if (G.startLevel >= core.MOD_INTRO_LEVEL.peek) G.seenMods.peek = true;
-    if (G.startLevel >= core.MOD_INTRO_LEVEL.shuffle) G.seenMods.shuffle = true;
+    // (a curveball debuting in the very level you start at still gets its in-game explainer)
+    if (G.startLevel > core.MOD_INTRO_LEVEL.peek) G.seenMods.peek = true;
+    if (G.startLevel > core.MOD_INTRO_LEVEL.shuffle) G.seenMods.shuffle = true;
     if (G.startLevel > 0) G.seenMods.slider = true;
     layout();
     spawnLock();
@@ -1784,9 +1874,10 @@
     const isBestLevel = G.levelReached > G.bestLevel;
     if (isBestLevel) {
       G.bestLevel = G.levelReached;
-      saveStr('lockbuster.bestLevel', G.bestLevel);
+      saveStr('lockbuster.bestLevel' + dsuf(G.diffKey), G.bestLevel);
     }
     $('st-level').textContent = G.levelReached;
+    $('over-mode').textContent = G.diffKey === 'normal' ? '' : D().name;
     $('over-title').textContent = rand(content.BUSTED_TITLES);
     $('over-quip').textContent = rand(content.BUSTED_QUIPS);
     $('over-score').textContent = G.score.toLocaleString();
@@ -1825,7 +1916,30 @@
     $('menu').classList.remove('hidden');
     document.body.classList.add('menu');
     document.body.classList.remove('training');
+    G.boss = null;
+    document.body.classList.remove('boss');
+    renderDifficulty();
+    renderCheckpoints();
+  }
+
+  // Newb / Normal / Ultra-Stress selector on the menu
+  function renderDifficulty() {
+    document.querySelectorAll('#diff button').forEach((b) => {
+      const on = b.dataset.d === G.diffKey;
+      b.classList.toggle('sel', on);
+      b.setAttribute('aria-checked', on ? 'true' : 'false');
+    });
+    $('diff-tag').textContent = content.DIFFICULTY_TAGS[G.diffKey];
     $('best-menu').textContent = G.best ? 'Best: ' + G.best.toLocaleString() + ' · Level ' + G.bestLevel : '';
+  }
+
+  function setDifficulty(key) {
+    if (core.DIFFICULTY_KEYS.indexOf(key) < 0) return;
+    G.diffKey = key;
+    saveStr('lockbuster.diff', key);
+    loadProgress();
+    G.startLevel = 0; // checkpoints belong to a difficulty
+    renderDifficulty();
     renderCheckpoints();
   }
 
@@ -1854,8 +1968,8 @@
     // when embedded at /games/lock-buster/play/, share the friendly page instead
     const url = location.origin + location.pathname.replace(/\/play\/(index\.html)?$/, '');
     const msg =
-      'LOCK BUSTER: I cracked ' + G.locks + ' locks (level ' + G.levelReached + ') for ' + G.score.toLocaleString() +
-      ' pts. Rank: ' + core.rankFor(G.locks) + '. Think you can beat me?';
+      'LOCK BUSTER: I cracked ' + G.locks + ' locks (level ' + G.levelReached + (G.diffKey === 'normal' ? '' : ', ' + D().name) +
+      ') for ' + G.score.toLocaleString() + ' pts. Rank: ' + core.rankFor(G.locks) + '. Think you can beat me?';
     const btn = $('share');
     try {
       if (navigator.share) {
@@ -1877,6 +1991,8 @@
   function syncSoundBtn() {
     $('snd').textContent = 'Sound: ' + (audio.isMuted() ? 'OFF' : 'ON');
   }
+
+  document.querySelectorAll('#diff button').forEach((b) => b.addEventListener('click', () => setDifficulty(b.dataset.d)));
 
   // first launch: practice run before the real thing (the rules card follows it)
   $('play').addEventListener('click', () => (G.tutorialDone || fixedSeed ? startGame() : startTraining()));
@@ -1903,5 +2019,5 @@
   requestAnimationFrame(frame);
 
   // exposed for the dev self-test (index.html?selftest)
-  LB.game = { G, L, startGame, startTraining, finishTraining, makeTrainingSpec: trainingSpec, TRAIN_PLAN, nextLevel, levelName, unlock, STEP, barrelGeom, sliderGeom, keyRect, noteVis, spawnLock };
+  LB.game = { G, L, D, setDifficulty, startGame, startTraining, finishTraining, makeTrainingSpec: trainingSpec, TRAIN_PLAN, nextLevel, levelName, unlock, STEP, barrelGeom, sliderGeom, keyRect, noteVis, spawnLock };
 })();

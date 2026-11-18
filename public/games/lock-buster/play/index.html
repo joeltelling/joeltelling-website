@@ -50,6 +50,12 @@
       </svg>
       <h1>LOCK<br>BUSTER</h1>
       <p class="tag">Crack locks. Steal snacks.<br>Panic gracefully.</p>
+      <div id="diff" class="diff" role="radiogroup" aria-label="Difficulty">
+        <button data-d="newb" role="radio">Newb</button>
+        <button data-d="normal" role="radio">Normal</button>
+        <button data-d="ultra" role="radio">Ultra-Stress</button>
+      </div>
+      <p id="diff-tag" class="difftag"></p>
       <button id="play" class="btn big">PLAY</button>
       <p class="how">The code is <b>right there</b>.<br>You just have to be <b>fast</b>.</p>
       <p id="best-menu" class="best"></p>
@@ -76,6 +82,7 @@
       <p class="kicker" id="lv-kicker">LEVEL 1 CLEARED</p>
       <h2 class="sm" id="lv-title">Vault cleared!</h2>
       <p id="lv-flaw" class="newbest hidden">FLAWLESS! x2 points</p>
+      <p id="lv-boss" class="bosspill hidden"></p>
       <div class="stats">
         <div><b id="lv-time">+3s</b><span>clock bonus</span></div>
         <div><b id="lv-pts">+250</b><span>points</span></div>
@@ -86,6 +93,7 @@
         <span class="kicker">NEXT UP</span>
         <b id="lv-next">Level 2</b>
         <i id="lv-tag"></i>
+        <i id="lv-boss-next" class="bossnext"></i>
         <div id="lv-new" class="newmod hidden"><b id="lv-new-t"></b><span id="lv-new-d"></span></div>
       </div>
       <button id="lv-go" class="btn big">GO!</button>
@@ -98,9 +106,9 @@
       <h2>READY?</h2>
       <p class="quip">Practice over. Here is the real deal:</p>
       <ul class="rules">
-        <li><b>The clock.</b> You start with 30 seconds. Hit zero and you are busted.</li>
+        <li><b>The clock.</b> You start with <span id="r-start">30</span> seconds. Hit zero and you are busted.</li>
         <li><b>Be fast.</b> Every lock shows the time it will pay you. It drains while you dither. Beat it and the clock grows. Time you earn is yours to keep.</li>
-        <li><b>Be careful.</b> Wrong code? That costs 2 seconds.</li>
+        <li><b>Be careful.</b> Wrong code? That costs <span id="r-wrong">2</span> seconds.</li>
         <li><b>Streaks.</b> Clean cracks in a row multiply your score.</li>
       </ul>
       <button id="ready-go" class="btn big">LET'S GO!</button>
@@ -124,7 +132,7 @@
         <div><b id="st-streak">0</b><span>streak</span></div>
         <div><b id="st-fast">-</b><span>fastest</span></div>
       </div>
-      <p class="rank">Rank: <b id="over-rank"></b></p>
+      <p class="rank">Rank: <b id="over-rank"></b> <span id="over-mode" class="modechip"></span></p>
       <p class="haul" id="over-haul"></p>
       <button id="retry" class="btn big">TRY AGAIN</button>
       <div class="row">

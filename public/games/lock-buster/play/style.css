@@ -249,6 +249,68 @@ h2.sm { font-size: 40px; margin-bottom: 8px; }
 .newmod b { display: block; font-size: 17px; color: #fff; margin: 0; text-shadow: 0 2px 0 var(--ink); }
 .newmod span { font-size: 13px; line-height: 1.2; }
 
+/* ---------- Difficulty selector (menu) ---------- */
+.diff { display: flex; gap: 6px; margin: 0 0 6px; }
+.diff button {
+  flex: 1;
+  font-family: var(--font);
+  font-weight: 900;
+  font-size: 14px;
+  line-height: 1.05;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.12);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 9px 4px;
+  touch-action: manipulation;
+  cursor: pointer;
+}
+.diff button.sel { color: var(--ink); background: var(--yellow); box-shadow: 0 3px 0 var(--ink); transform: translateY(-1px); }
+.diff button.sel[data-d="newb"] { background: var(--teal); }
+.diff button.sel[data-d="ultra"] { background: var(--red); color: #fff; text-shadow: 0 2px 0 var(--ink); }
+.difftag { margin: 0 0 14px; min-height: 17px; font-size: 13px; color: #d9c7ff; }
+.modechip {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 1px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  vertical-align: 2px;
+}
+.modechip:empty { display: none; }
+
+/* ---------- Boss locks ---------- */
+.bosspill {
+  display: inline-block;
+  margin: 2px 0 8px;
+  padding: 4px 12px;
+  font-weight: 900;
+  font-size: 15px;
+  color: #fff;
+  background: var(--red);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  transform: rotate(2deg);
+  text-shadow: 0 2px 0 var(--ink);
+}
+.next i.bossnext { color: #ff9ccc; font-weight: 900; }
+.next i.bossnext:empty { display: none; }
+body.boss #lvl-name { color: #ff9ccc; font-weight: 900; }
+#lvl-pips i.boss { border-radius: 3px; transform: rotate(45deg); background: rgba(255, 79, 154, 0.6); }
+#lvl-pips i.boss.on { background: var(--teal); }
+#lvl-pips i.boss.cur { background: var(--yellow); transform: rotate(45deg) scale(1.25); }
+body.boss:not(.danger) #vignette { animation: bossvig 1.1s ease-in-out infinite; }
+@keyframes bossvig {
+  0%, 100% { box-shadow: inset 0 0 60px 6px rgba(255, 79, 154, 0.18); }
+  50%      { box-shadow: inset 0 0 110px 26px rgba(255, 79, 154, 0.42); }
+}
+
 /* ---------- Start-level chips (checkpoints) ---------- */
 .cp { display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 8px; margin: 10px 0 0; }
 .cp .lab { font-size: 12px; letter-spacing: 1px; color: #d9c7ff; text-transform: uppercase; }
